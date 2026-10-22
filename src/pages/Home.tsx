@@ -9,6 +9,7 @@ import { FixtureRow } from "@/components/FixtureRow";
 import { PickCard } from "@/components/PickCard";
 import { Coupon } from "@/components/Coupon";
 import { Ticker } from "@/components/Ticker";
+import { HowToRead } from "@/components/HowToRead";
 import { Section, TextLink, Loading } from "@/components/bits";
 import type { Match } from "@/lib/types";
 
@@ -77,6 +78,7 @@ export default function Home() {
         <p className="-mt-1 mb-5 max-w-2xl muted">
           Our chance of each result, with the fair price in the corner. The highlighted box is the most likely result. Tap any box to put it on your ticket.
         </p>
+        <HowToRead className="mb-6" />
         <div className="mb-5 flex flex-wrap gap-2">
           <button className={`chip ${league === "all" ? "chip-on" : ""}`} onClick={() => setLeague("all")}>All leagues</button>
           {leagues.map((l) => (

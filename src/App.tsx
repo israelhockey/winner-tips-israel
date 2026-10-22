@@ -1,28 +1,29 @@
-import { lazy, Suspense, useEffect } from "react";
+import { useEffect } from "react";
 import { BrowserRouter, HashRouter, Route, Routes, useLocation, Link } from "react-router-dom";
 
 // Normal hosting uses real URLs; the preview build (VITE_PREVIEW=1) runs inside a host page, so it routes in-page.
 const Router = import.meta.env.VITE_PREVIEW ? HashRouter : BrowserRouter;
 import { AppProvider } from "@/lib/state";
 import { Layout } from "@/components/Layout";
-import { Loading, Empty } from "@/components/bits";
+import { Empty } from "@/components/bits";
 import Home from "@/pages/Home";
 
-const Picks = lazy(() => import("@/pages/Picks"));
-const Fixtures = lazy(() => import("@/pages/Fixtures"));
-const MatchPage = lazy(() => import("@/pages/MatchPage"));
-const Value = lazy(() => import("@/pages/Value"));
-const TicketPage = lazy(() => import("@/pages/TicketPage"));
-const Leagues = lazy(() => import("@/pages/Leagues"));
-const LeaguePage = lazy(() => import("@/pages/LeaguePage"));
-const RecordPage = lazy(() => import("@/pages/RecordPage"));
-const Membership = lazy(() => import("@/pages/Membership"));
-const Responsible = lazy(() => import("@/pages/Responsible"));
-const HowItWorks = lazy(() => import("@/pages/HowItWorks"));
+import Picks from "@/pages/Picks";
+import Fixtures from "@/pages/Fixtures";
+import MatchPage from "@/pages/MatchPage";
+import Value from "@/pages/Value";
+import TicketPage from "@/pages/TicketPage";
+import Leagues from "@/pages/Leagues";
+import LeaguePage from "@/pages/LeaguePage";
+import RecordPage from "@/pages/RecordPage";
+import Membership from "@/pages/Membership";
+import Responsible from "@/pages/Responsible";
+import HowItWorks from "@/pages/HowItWorks";
+import Guide from "@/pages/Guide";
 
 function ScrollTop() {
   const { pathname } = useLocation();
-  useEffect(() => window.scrollTo(0, 0), [pathname]);
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
   return null;
 }
 
@@ -32,7 +33,6 @@ export default function App() {
       <Router>
         <ScrollTop />
         <Layout>
-          <Suspense fallback={<Loading what="the page" />}>
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/picks" element={<Picks />} />
@@ -46,9 +46,9 @@ export default function App() {
               <Route path="/membership" element={<Membership />} />
               <Route path="/responsible-gambling" element={<Responsible />} />
               <Route path="/how-it-works" element={<HowItWorks />} />
+              <Route path="/guide" element={<Guide />} />
               <Route path="*" element={<Empty title="That page doesn't exist"><Link to="/" className="underline">Go to the home page</Link></Empty>} />
             </Routes>
-          </Suspense>
         </Layout>
       </Router>
     </AppProvider>

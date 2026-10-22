@@ -44,6 +44,7 @@ export default function MatchPage() {
           <div className="mt-8">
             {isFootballModel(m.model) && <HeroBoxes m={m} p={[m.model["1x2"]["1"], m.model["1x2"].X, m.model["1x2"]["2"]]} sels={["1", "X", "2"]} market="1X2" lg={lg} />}
             {isBasketModel(m.model) && <HeroBoxes m={m} p={[m.model.win["1"], m.model.win["2"]]} sels={["1", "2"]} market="Moneyline" lg={lg} />}
+            <InPlainWords m={m} />
           </div>
         )}
       </header>
@@ -52,8 +53,8 @@ export default function MatchPage() {
       {m.model && isBasketModel(m.model) && (
         <section className="mt-8 grid gap-4 md:grid-cols-3">
           <div className="panel p-5"><div className="text-xs muted">Win chance</div><div className="mt-1 num font-semibold">{m.home} {pct(m.model.win["1"])}</div><div className="num font-semibold">{m.away} {pct(m.model.win["2"])}</div></div>
-          <div className="panel p-5"><div className="text-xs muted">Projected margin</div><div className="mt-1 display num text-2xl font-bold">{m.model.spread > 0 ? m.home : m.away} by {Math.abs(m.model.spread).toFixed(1)}</div><div className="text-xs text-ink-faint">Fair handicap line {m.model.spread > 0 ? "-" : "+"}{Math.abs(m.model.spread).toFixed(1)} for {m.home}</div></div>
-          <div className="panel p-5"><div className="text-xs muted">Projected total points</div><div className="mt-1 display num text-2xl font-bold">{m.model.total ? m.model.total.toFixed(0) : "–"}</div><div className="text-xs text-ink-faint">From each team's last 15 games</div></div>
+          <div className="panel p-5"><div className="text-xs muted">Projected margin</div><div className="mt-1 display num text-2xl font-bold">{m.model.spread > 0 ? m.home : m.away} by {Math.abs(m.model.spread).toFixed(1)}</div><div className="text-xs text-ink-faint">How many points we expect them to win by. Fair handicap line {m.model.spread > 0 ? "−" : "+"}{Math.abs(m.model.spread).toFixed(1)} for {m.home}</div></div>
+          <div className="panel p-5"><div className="text-xs muted">Projected total points</div><div className="mt-1 display num text-2xl font-bold">{m.model.total ? m.model.total.toFixed(0) : "–"}</div><div className="text-xs text-ink-faint">Both teams' points added together, projected from their last 15 games</div></div>
         </section>
       )}
 
@@ -97,21 +98,24 @@ function ResultsList({ title, rows, empty = "No games yet." }: { title: string; 
 
 function FootballMarkets({ m, lg }: { m: Match; lg: League }) {
   const model = m.model as Extract<Match["model"], { "1x2": unknown }>;
-  const rows: { market: string; line?: number; sel: string; label: string; p: number }[] = [
-    { market: "Double chance", sel: "1X", label: `${m.home} or draw`, p: model.dc["1X"] },
-    { market: "Double chance", sel: "12", label: "Either team wins", p: model.dc["12"] },
-    { market: "Double chance", sel: "X2", label: `${m.away} or draw`, p: model.dc.X2 },
+  const rows: { market: string; line?: number; sel: string; label: string; p: number; hint?: string }[] = [
+    { market: "Double chance", sel: "1X", label: `${m.home} or draw`, p: model.dc["1X"], hint: `Double chance 1X: wins unless ${m.away} wins` },
+    { market: "Double chance", sel: "12", label: "Either team wins", p: model.dc["12"], hint: "Double chance 12: wins unless it's a draw" },
+    { market: "Double chance", sel: "X2", label: `${m.away} or draw`, p: model.dc.X2, hint: `Double chance X2: wins unless ${m.home} wins` },
     ...["1.5", "2.5", "3.5"].flatMap((l) => [
-      { market: "Over/Under", line: Number(l), sel: "Over", label: `Over ${l} goals`, p: model.ou[l] },
-      { market: "Over/Under", line: Number(l), sel: "Under", label: `Under ${l} goals`, p: 1 - model.ou[l] },
+      { market: "Over/Under", line: Number(l), sel: "Over", label: `Over ${l} goals`, p: model.ou[l], hint: `${Math.ceil(Number(l))} or more goals in total` },
+      { market: "Over/Under", line: Number(l), sel: "Under", label: `Under ${l} goals`, p: 1 - model.ou[l], hint: `${Math.floor(Number(l))} or fewer goals in total` },
     ]),
-    { market: "BTTS", sel: "Yes", label: "Both teams score", p: model.btts },
-    { market: "BTTS", sel: "No", label: "Not both teams score", p: 1 - model.btts },
+    { market: "BTTS", sel: "Yes", label: "Both teams score", p: model.btts, hint: "Each side scores at least once" },
+    { market: "BTTS", sel: "No", label: "Not both teams score", p: 1 - model.btts, hint: "At least one side fails to score" },
   ];
   return (
     <section className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
       <div className="panel">
-        <h2 className="border-b border-line px-5 py-4 font-semibold">Every market, priced</h2>
+        <div className="border-b border-line px-5 py-4">
+          <h2 className="font-semibold">Every market, priced</h2>
+          <p className="mt-1 text-xs leading-relaxed text-ink-muted">Other bets on this game. The % is our chance it wins; the bold number is the fair odds. Winner paying more than the fair odds is good value.</p>
+        </div>
         <div className="divide-y divide-line">
           {rows.map((r) => <MarketRow key={r.label} m={m} lg={lg} {...r} />)}
         </div>
@@ -119,7 +123,9 @@ function FootballMarkets({ m, lg }: { m: Match; lg: League }) {
       <div className="space-y-6">
         <div className="panel p-5">
           <h3 className="font-semibold">Handicap, Winner style</h3>
-          <p className="mt-1 text-xs muted">Three-way: the handicap is applied to the home side, and the draw is a result of its own.</p>
+          <p className="mt-1 text-xs leading-relaxed muted">
+            The game replayed with a head start. With {m.home} −1, they need to win by 2 or more for a 1; winning by exactly 1 counts as X. With +1, they start a goal up, so a 1-goal defeat counts as X.
+          </p>
           {(["-1", "+1"] as const).map((h) => (
             <div key={h} className="mt-4">
               <div className="mb-2 text-sm">{m.home} {h}</div>
@@ -129,6 +135,7 @@ function FootballMarkets({ m, lg }: { m: Match; lg: League }) {
         </div>
         <div className="panel p-5">
           <h3 className="font-semibold">Most likely scores</h3>
+          <p className="mt-1 text-xs muted">Even the likeliest exact score happens only about one game in eight or nine.</p>
           <ul className="mt-3 space-y-2 num text-sm">
             {model.cs.map((c) => (
               <li key={c.score} className="flex items-center gap-3">
@@ -138,20 +145,23 @@ function FootballMarkets({ m, lg }: { m: Match; lg: League }) {
               </li>
             ))}
           </ul>
-          <p className="mt-4 text-xs text-ink-faint num">Expected goals {model.xg[0].toFixed(2)} for {m.home}, {model.xg[1].toFixed(2)} for {m.away}.</p>
+          <p className="mt-4 text-xs text-ink-faint num">Expected goals (the average we expect each side to score): {model.xg[0].toFixed(2)} for {m.home}, {model.xg[1].toFixed(2)} for {m.away}.</p>
         </div>
       </div>
     </section>
   );
 }
 
-function MarketRow({ m, lg, market, line, sel, label, p }: { m: Match; lg: League; market: string; line?: number; sel: string; label: string; p: number }) {
+function MarketRow({ m, lg, market, line, sel, label, p, hint }: { m: Match; lg: League; market: string; line?: number; sel: string; label: string; p: number; hint?: string }) {
   const { addLeg, hasLeg, removeLeg } = useApp();
   const key = `${m.id}|${market}${line ?? ""}|${sel}`;
   const on = hasLeg(key);
   return (
     <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 px-5 py-3 text-sm">
-      <span>{label}</span>
+      <span className="min-w-0">
+        <span className="block">{label}</span>
+        {hint && <span className="block text-xs text-ink-faint">{hint}</span>}
+      </span>
       <span className="num muted">{pct(p)}</span>
       <span className="num w-12 text-right font-semibold" title="Fair odds">{fair(p)}</span>
       <button
@@ -181,5 +191,23 @@ function HeroBoxes({ m, p, sels, market, lg }: { m: Match; p: number[]; sels: st
           label: sels[i] === "1" ? m.home : sels[i] === "2" ? m.away : "Draw", modelP: p[i], odds: null });
       }}
     />
+  );
+}
+
+// One or two sentences that say what the boxes mean for this game, for readers new to odds.
+function InPlainWords({ m }: { m: Match }) {
+  if (!m.model) return null;
+  const opts: [string, number][] = isFootballModel(m.model)
+    ? [[`${m.home} to win`, m.model["1x2"]["1"]], ["a draw", m.model["1x2"].X], [`${m.away} to win`, m.model["1x2"]["2"]]]
+    : isBasketModel(m.model) ? [[`${m.home} to win`, m.model.win["1"]], [`${m.away} to win`, m.model.win["2"]]] : [];
+  if (!opts.length) return null;
+  const [name, p] = opts.reduce((a, b) => (b[1] > a[1] ? b : a));
+  const strength = p >= 0.65 ? "clear favourites" : p >= 0.5 ? "favourites" : "slight favourites in an open game";
+  return (
+    <p className="mt-5 rounded border border-line bg-well px-4 py-3 text-sm leading-relaxed">
+      <span className="font-semibold">In plain words: </span>
+      we make it {pct(p)} for {name}{name.endsWith("to win") ? `, so they're ${strength}` : ""}. A fair price for that is {fair(p)}: if Winner offers more than {fair(p)}, it's a good-value bet;
+      if it offers less, it isn't. Tap a box to add it to your ticket.
+    </p>
   );
 }

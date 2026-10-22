@@ -28,8 +28,8 @@ export function FixtureRow({ m, leagueKey, showLeague = false, compact = false }
   };
 
   const meta = fm
-    ? `xG ${fm.xg[0].toFixed(1)}–${fm.xg[1].toFixed(1)}`
-    : bm ? `${bm.spread > 0 ? m.home.split(" ").at(-1) : m.away.split(" ").at(-1)} by ${Math.abs(bm.spread).toFixed(1)}${bm.total ? `, total ${bm.total.toFixed(0)}` : ""}` : "";
+    ? `Expected goals ${fm.xg[0].toFixed(1)}–${fm.xg[1].toFixed(1)}`
+    : bm ? `${bm.spread > 0 ? m.home.split(" ").at(-1) : m.away.split(" ").at(-1)} by ${Math.abs(bm.spread).toFixed(1)} pts${bm.total ? ` · ${bm.total.toFixed(0)} total points` : ""}` : "";
 
   return (
     <div className={`grid gap-x-4 gap-y-3 border-b border-line px-4 py-3.5 last:border-b-0 ${compact ? "grid-cols-[3rem_1fr]" : "grid-cols-[3rem_1fr] md:grid-cols-[3.25rem_minmax(0,1fr)_minmax(15rem,20rem)] md:items-center"}`}>

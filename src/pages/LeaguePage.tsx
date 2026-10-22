@@ -4,6 +4,7 @@ import { useLeague } from "@/lib/data";
 import { ago, pct, shortDate, dayKey, dayLabel } from "@/lib/format";
 import { Form, Loading, Empty, TeamMark } from "@/components/bits";
 import { FixtureRow } from "@/components/FixtureRow";
+import { HowToRead } from "@/components/HowToRead";
 import type { League, Match } from "@/lib/types";
 
 const TABS = ["Table", "Fixtures", "Results", "Ratings", "Model check"] as const;
@@ -46,6 +47,7 @@ export default function LeaguePage() {
 function TableView({ lg }: { lg: League }) {
   const fb = lg.sport === "football";
   return (
+    <>
     <div className="panel overflow-x-auto">
       <table className="w-full min-w-[640px] text-sm num">
         <thead className="text-xs muted">
@@ -70,6 +72,10 @@ function TableView({ lg }: { lg: League }) {
         </tbody>
       </table>
     </div>
+    <p className="mt-3 text-xs leading-relaxed text-ink-faint">
+      P played · W won{fb ? " · D drawn" : ""} · L lost · {fb ? "GD goal difference (scored minus conceded)" : "+/- points scored minus conceded"} · Pts {fb ? "points (3 for a win, 1 for a draw)" : "points"} · Form: last five games, oldest first
+    </p>
+    </>
   );
 }
 
@@ -82,6 +88,7 @@ function FixturesView({ lg }: { lg: League }) {
   if (!groups.length) return <p className="panel p-6 muted">No games scheduled in the next three weeks.</p>;
   return (
     <div className="space-y-6">
+      <HowToRead />
       {groups.map((ms) => (
         <section key={ms[0].kickoff}>
           <h2 className="mb-2 text-sm font-semibold muted">{dayLabel(ms[0].kickoff)}</h2>
@@ -117,8 +124,8 @@ function RatingsView({ lg }: { lg: League }) {
     <>
       <p className="mb-4 max-w-2xl text-sm muted">
         {poisson
-          ? "Attack is goals scored relative to the league average (above 1 is better); defence is goals conceded (below 1 is better). Recent games count more."
-          : "Elo ratings: about 100 points is worth a 64% win chance on a neutral floor. They carry across seasons and, for the cups, across leagues."}
+          ? "Our ranking of how strong each team really is, whatever the table says. Attack 1.30 means the team scores 30% more than an average side; defence 0.80 means it concedes 20% less (lower is better). Recent games count more."
+          : "Our ranking of how strong each team really is, whatever the table says. A team rated 100 points higher would win about 64% of games on a neutral floor."}
       </p>
       <div className="panel divide-y divide-line">
         {lg.ratings.map((r, i) => (
@@ -144,16 +151,16 @@ function CheckView({ lg }: { lg: League }) {
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
       <div className="panel p-6">
         <p className="max-w-xl text-sm muted">
-          From {shortDate(c.from)}, the model predicted {c.matches} {lg.name} games using only what it knew before each one, refitting every week.
+          Can you trust our percentages? To check, we replayed {c.matches} {lg.name} games from {shortDate(c.from)}, predicting each one using only what was known before kickoff, then compared with what actually happened.
         </p>
         <dl className="mt-6 grid grid-cols-2 gap-6 md:grid-cols-4">
-          <div><dt className="text-xs muted">Favourite won</dt><dd className="display num text-2xl font-bold">{pct(c.hitRate)}</dd></div>
+          <div><dt className="text-xs muted">Our favourite won</dt><dd className="display num text-2xl font-bold">{pct(c.hitRate)}</dd></div>
           <div><dt className="text-xs muted">Brier score</dt><dd className="display num text-2xl font-bold text-won">{c.brier.toFixed(3)}</dd></div>
           <div><dt className="text-xs muted">Baseline Brier</dt><dd className="display num text-2xl font-bold muted">{c.baselineBrier.toFixed(3)}</dd></div>
           <div><dt className="text-xs muted">Log loss</dt><dd className="display num text-2xl font-bold">{c.logLoss.toFixed(3)}</dd></div>
         </dl>
         <p className="mt-6 text-sm muted">
-          Lower is better for both scores. The baseline knows only how often home wins, draws and away wins happen in this league.
+          The Brier score measures how far our percentages were from what happened: 0 would be perfect, and lower is better. The baseline is a simple guess that only knows how often home wins, draws and away wins happen in this league. Beating it means the model adds real information.
           This is a test of the model's probabilities, not a betting record: that's on the <Link to="/record" className="underline underline-offset-2">record page</Link>.
         </p>
       </div>

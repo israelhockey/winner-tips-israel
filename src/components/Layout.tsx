@@ -12,6 +12,7 @@ const NAV = [
   { to: "/leagues", label: "Leagues" },
   { to: "/record", label: "Record" },
   { to: "/membership", label: "Membership" },
+  { to: "/guide", label: "Beginner's guide" },
 ];
 
 // The mark: three coupon boxes, the first one marked.
@@ -46,7 +47,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-30 border-b border-line bg-paper/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-page items-center justify-between gap-6 px-4 md:px-6">
           <Logo />
-          <nav className="hidden items-center gap-6 lg:flex" aria-label="Main">
+          <nav className="hidden items-center gap-6 xl:flex" aria-label="Main">
             {NAV.map((n) => (
               <NavLink key={n.to} to={n.to}
                 className={({ isActive }) => `relative py-2 text-sm font-semibold transition-colors ${isActive ? "text-ink after:absolute after:inset-x-0 after:-bottom-[13px] after:h-[3px] after:bg-accent" : "text-ink-muted hover:text-ink"}`}>
@@ -59,13 +60,13 @@ export function Layout({ children }: { children: ReactNode }) {
               Ticket
               <span className={`num grid h-5 min-w-5 place-items-center rounded px-1 text-xs font-bold ${legs.length ? "bg-marker text-ink" : "bg-white/15"}`}>{legs.length}</span>
             </Link>
-            <button className="btn-quiet px-3 lg:hidden" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label="Menu">
+            <button className="btn-quiet px-3 xl:hidden" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label="Menu">
               {open ? <X size={18} /> : <Menu size={18} />}
             </button>
           </div>
         </div>
         {open && (
-          <nav className="border-t border-line bg-paper px-4 py-2 lg:hidden" aria-label="Main">
+          <nav className="border-t border-line bg-paper px-4 py-2 xl:hidden" aria-label="Main">
             {NAV.map((n) => (
               <NavLink key={n.to} to={n.to} onClick={() => setOpen(false)}
                 className={({ isActive }) => `block border-b border-line py-3 font-display text-xl font-bold last:border-0 ${isActive ? "text-accent" : ""}`}>
@@ -89,6 +90,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
           <div className="space-y-2.5">
             <p className="font-display text-lg font-bold text-white">Site</p>
+            <Link className="block hover:text-white" to="/guide">Beginner's guide</Link>
             <Link className="block hover:text-white" to="/how-it-works">How the model works</Link>
             <Link className="block hover:text-white" to="/record">The full record</Link>
             <Link className="block hover:text-white" to="/responsible-gambling">Responsible gambling</Link>

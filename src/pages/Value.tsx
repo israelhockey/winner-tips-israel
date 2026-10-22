@@ -33,8 +33,28 @@ export default function Value() {
     <>
       <h1 className="h1">Value finder</h1>
       <p className="mt-3 max-w-2xl muted">
-        Type in the odds Winner is offering. Where Winner pays more than our fair price, the bet has value: over many bets, value is what wins.
-        Your odds stay in this browser.
+        Find the bets where Winner is paying more than it should. Winner doesn't publish its odds in a feed we can read, so you copy them in from the coupon. Your odds stay on this device.
+      </p>
+
+      <ol className="mt-6 grid gap-px overflow-hidden rounded-card border border-line bg-line md:grid-cols-3">
+        {[
+          ["Open the Winner coupon", "On the Winner app or a printed coupon, find a game listed below."],
+          ["Type in Winner's odds", "Put Winner's number for 1, X or 2 in the matching box under the game. Next to it you'll see our fair odds."],
+          ["Look for green", "If Winner pays at least 5% more than our fair odds, the box turns green and the bet appears under Value on your coupon."],
+        ].map(([t, d], i) => (
+          <li key={t} className="bg-card p-5">
+            <div className="flex items-baseline gap-2.5">
+              <span className="num font-display text-3xl font-extrabold text-accent">{i + 1}</span>
+              <span className="font-semibold">{t}</span>
+            </div>
+            <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">{d}</p>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-3 max-w-3xl text-sm leading-relaxed text-ink-muted">
+        <span className="font-semibold text-ink">Example:</span> we give Maccabi a 50% chance, so our fair odds are 2.00. Winner offers 2.20.
+        That's 10% more than fair, shown as <span className="num font-semibold text-accent">+10%</span>: a value bet. If Winner offered 1.80, you'd see <span className="num">−10%</span>: skip it.
+        Value doesn't mean a bet will win. It means that over many bets like it, you'd expect to come out ahead.
       </p>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_340px] lg:items-start">

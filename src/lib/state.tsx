@@ -44,9 +44,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [tier, setTier] = useState<Tier>(() => read("lu.tier", "visitor"));
   const [email, setEmail] = useState<string | null>(() => read("lu.email", null));
 
-  useEffect(() => write("lu.ticket", legs), [legs]);
-  useEffect(() => write("lu.tier", tier), [tier]);
-  useEffect(() => write("lu.email", email), [email]);
+  useEffect(() => { write("lu.ticket", legs); }, [legs]);
+  useEffect(() => { write("lu.tier", tier); }, [tier]);
+  useEffect(() => { write("lu.email", email); }, [email]);
 
   const value = useMemo<Ctx>(() => ({
     legs,

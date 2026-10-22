@@ -4,6 +4,7 @@ import { useIndex, useLeague } from "@/lib/data";
 import { dayKey, dayLabel, ago } from "@/lib/format";
 import { FixtureRow } from "@/components/FixtureRow";
 import { Loading } from "@/components/bits";
+import { HowToRead } from "@/components/HowToRead";
 import type { Match } from "@/lib/types";
 
 // Every upcoming game with model prices. One league at a time shows three weeks ahead;
@@ -36,6 +37,8 @@ export default function Fixtures() {
       <p className="mt-3 max-w-2xl muted">
         Our probability for every result and the fair price behind it. Tap a result to add it to your ticket, or open a game for the full preview.
       </p>
+
+      <HowToRead className="mt-6" />
 
       <div className="mt-8 space-y-3">
         <div className="flex flex-wrap gap-2">
