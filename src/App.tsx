@@ -1,5 +1,8 @@
 import { lazy, Suspense, useEffect } from "react";
-import { BrowserRouter, Route, Routes, useLocation, Link } from "react-router-dom";
+import { BrowserRouter, HashRouter, Route, Routes, useLocation, Link } from "react-router-dom";
+
+// Normal hosting uses real URLs; the preview build (VITE_PREVIEW=1) runs inside a host page, so it routes in-page.
+const Router = import.meta.env.VITE_PREVIEW ? HashRouter : BrowserRouter;
 import { AppProvider } from "@/lib/state";
 import { Layout } from "@/components/Layout";
 import { Loading, Empty } from "@/components/bits";
@@ -26,7 +29,7 @@ function ScrollTop() {
 export default function App() {
   return (
     <AppProvider>
-      <BrowserRouter>
+      <Router>
         <ScrollTop />
         <Layout>
           <Suspense fallback={<Loading what="the page" />}>
@@ -47,7 +50,7 @@ export default function App() {
             </Routes>
           </Suspense>
         </Layout>
-      </BrowserRouter>
+      </Router>
     </AppProvider>
   );
 }

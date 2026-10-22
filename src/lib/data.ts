@@ -28,7 +28,8 @@ function useJson<T>(path: string | null) {
   return state;
 }
 
-export const useIndex = () => useJson<Index>("/data/index.json");
-export const useLeague = (key: string | undefined) => useJson<League>(key ? `/data/leagues/${key}.json` : null);
-export const useRecord = () => useJson<PicksRecord>("/data/record.json");
-export const loadLeague = (key: string) => getJson<League>(`/data/leagues/${key}.json`);
+const BASE = import.meta.env.BASE_URL;
+export const useIndex = () => useJson<Index>(`${BASE}data/index.json`);
+export const useLeague = (key: string | undefined) => useJson<League>(key ? `${BASE}data/leagues/${key}.json` : null);
+export const useRecord = () => useJson<PicksRecord>(`${BASE}data/record.json`);
+export const loadLeague = (key: string) => getJson<League>(`${BASE}data/leagues/${key}.json`);
