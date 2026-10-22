@@ -90,7 +90,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <p className="font-semibold">Data</p>
             <p className="muted">
               Fixtures and results from <a className="underline underline-offset-2 hover:text-chalk" href="https://github.com/openfootball/football.json">openfootball</a> (public domain),{" "}
-              <a className="underline underline-offset-2 hover:text-chalk" href="https://www.thesportsdb.com">TheSportsDB</a> and the NBA's public schedule.
+              <a className="underline underline-offset-2 hover:text-chalk" href="https://www.thesportsdb.com">TheSportsDB</a> and ESPN's public scoreboards.
             </p>
           </div>
         </div>

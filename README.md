@@ -32,8 +32,8 @@ npm run build        # production build in dist/
 | Competitions | Source | Notes |
 | --- | --- | --- |
 | Premier League, Championship, La Liga, Serie A, Bundesliga, Ligue 1, Eredivisie, Primeira Liga | [openfootball/football.json](https://github.com/openfootball/football.json) | Public domain. Runs a week or two behind, so the newest results are filled from TheSportsDB |
-| Ligat Winner, Israeli basketball, EuroLeague, Champions League, Europa League, Conference League | [TheSportsDB](https://www.thesportsdb.com) free API | About 30 requests a minute; settled rounds are cached so each run only fetches open rounds |
-| NBA | NBA public schedule (`cdn.nba.com`) | Whole season in one file |
+| Ligat Winner, Israeli basketball, EuroLeague | [TheSportsDB](https://www.thesportsdb.com) free API | Throttles hard (requests are paced 7 s apart); settled rounds are cached, so the first backfill takes a few runs and later runs only fetch open rounds |
+| Champions League, Europa League, Conference League, NBA | ESPN public scoreboard (`site.api.espn.com`) | Unofficial, no key; one request per day, finished days cached |
 
 The fetcher is `scripts/fetch-data.mjs`, the leagues are listed in `scripts/leagues.mjs`, and the model is `scripts/build-model.mjs`. The workflow is `.github/workflows/data.yml`; run it by hand from the Actions tab (tick "full" to re-fetch everything). A TheSportsDB Patreon key, if you get one, goes in the `TSDB_KEY` repository secret.
 

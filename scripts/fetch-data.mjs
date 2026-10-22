@@ -16,9 +16,11 @@ import { LEAGUES } from "./leagues.mjs";
 const RAW_DIR = new URL("../data/raw/", import.meta.url);
 const TSDB = `https://www.thesportsdb.com/api/v1/json/${process.env.TSDB_KEY || "123"}`;
 const OPENFOOTBALL = "https://raw.githubusercontent.com/openfootball/football.json/master";
-const NBA_SCHEDULE = "https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json";
+const ESPN = "https://site.api.espn.com/apis/site/v2/sports";
+const ESPN_GAP_MS = 400;
+const AHEAD_DAYS = 21;
 // The free key throttles bursts with a two-minute penalty, so pace requests well under it.
-const TSDB_GAP_MS = Number(process.env.TSDB_GAP_MS || 5000);
+const TSDB_GAP_MS = Number(process.env.TSDB_GAP_MS || 7000);
 // Stop starting new TheSportsDB work after this long; what is done is saved and the next run continues.
 const BUDGET_MS = Number(process.env.FETCH_BUDGET_MIN || 30) * 60e3;
 const STARTED = Date.now();
@@ -29,11 +31,12 @@ const args = process.argv.slice(2);
 const forceFull = args.includes("--full");
 const picked = args.filter((a) => !a.startsWith("--"));
 // Cheap sources first (one request per league), then TheSportsDB round by round.
-const order = { nba: 0, openfootball: 1, tsdb: 2 };
+const order = { openfootball: 0, espn: 1, tsdb: 2 };
 const leagues = (picked.length ? LEAGUES.filter((l) => picked.includes(l.key)) : LEAGUES)
   .slice().sort((a, b) => order[a.source] - order[b.source] || Number(!!b.featured) - Number(!!a.featured));
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const DAY_MS = 86400e3;
 let lastTsdb = 0;
 
 async function getJson(url, { tries = 5, tsdb = false } = {}) {
@@ -198,30 +201,55 @@ async function fillRecentFromTsdb(league, matches) {
   if (rounds.length) console.log(`  filled ${filled} recent results from TheSportsDB (${rounds.length} rounds)`);
 }
 
-async function fetchNba() {
-  const j = await getJson(NBA_SCHEDULE);
-  const out = [];
-  const season = j?.leagueSchedule?.seasonYear || "";
-  for (const day of j?.leagueSchedule?.gameDates || []) {
-    for (const g of day.games || []) {
-      // Pre-season and All-Star games are left out; regular season ids start with 002, playoffs 004, play-in 005.
-      if (!/^00[245]/.test(g.gameId)) continue;
-      const done = g.gameStatus === 3;
-      out.push({
-        id: `nba-${g.gameId}`,
-        season,
-        round: g.weekNumber ? String(g.weekNumber) : null,
-        kickoff: g.gameDateTimeUTC,
-        home: `${g.homeTeam.teamCity} ${g.homeTeam.teamName}`.trim(),
-        away: `${g.awayTeam.teamCity} ${g.awayTeam.teamName}`.trim(),
-        hs: done ? g.homeTeam.score : null,
-        as: done ? g.awayTeam.score : null,
-        status: done ? "FT" : g.gameStatus === 2 ? "LIVE" : "NS",
-        venue: g.arenaName || null,
-      });
+// ESPN's scoreboard takes one date per request. Past days whose games are all settled never
+// change, so they're kept; today and the days ahead are fetched every run.
+async function fetchEspn(league, prev) {
+  const prevDays = prev?.days || {};
+  const days = {};
+  const ymd = (t) => new Date(t).toISOString().slice(0, 10).replaceAll("-", "");
+  const today = ymd(Date.now());
+  let fetched = 0, partial = false;
+  for (const { season, from, to } of league.seasons) {
+    const end = Math.min(Date.parse(to), Date.now() + AHEAD_DAYS * DAY_MS);
+    for (let t = Date.parse(from); t <= end; t += DAY_MS) {
+      const d = ymd(t);
+      const old = prevDays[d];
+      const settled = old && old.matches.every((m) => m.status === "FT" || m.status === "PST");
+      if (old && d < today && settled && !forceFull) { days[d] = old; continue; }
+      if (overBudget()) { if (old) days[d] = old; partial = true; continue; }
+      await sleep(ESPN_GAP_MS);
+      let j;
+      try { j = await getJson(`${ESPN}/${league.espn}/scoreboard?dates=${d}&limit=200`); }
+      catch (err) { if (old) days[d] = old; partial = true; console.log(`  ${d}: ${err.message}`); continue; }
+      fetched++;
+      days[d] = { fetchedAt: new Date().toISOString(), matches: (j?.events || []).map((e) => fromEspnEvent(e, season)).filter(Boolean) };
     }
   }
-  return { matches: out };
+  console.log(`  ${fetched} days fetched from ESPN${partial ? " (stopped early; the next run continues)" : ""}`);
+  const seen = new Set();
+  const matches = Object.values(days).flatMap((x) => x.matches).filter((m) => !seen.has(m.id) && seen.add(m.id));
+  return { matches, days, partial };
+}
+
+function fromEspnEvent(e, season) {
+  const c = e.competitions?.[0];
+  const home = c?.competitors?.find((x) => x.homeAway === "home");
+  const away = c?.competitors?.find((x) => x.homeAway === "away");
+  if (!home || !away) return null;
+  const type = (c.status || e.status)?.type || {};
+  const status = type.completed ? "FT" : /POSTPONED|CANCELED|CANCELLED|SUSPENDED|ABANDONED/.test(type.name || "") ? "PST" : type.state === "in" ? "LIVE" : "NS";
+  return {
+    id: `espn-${e.id}`,
+    season,
+    round: null,
+    kickoff: new Date(e.date).toISOString(),
+    home: home.team.displayName,
+    away: away.team.displayName,
+    hs: status === "FT" ? Number(home.score) : null,
+    as: status === "FT" ? Number(away.score) : null,
+    status,
+    venue: c.venue?.fullName || null,
+  };
 }
 
 // ---------- main ----------
@@ -238,7 +266,7 @@ for (const league of leagues) {
     let result;
     if (league.source === "tsdb") result = await fetchTsdb(league, prev, full);
     else if (league.source === "openfootball") result = await fetchOpenfootball(league);
-    else if (league.source === "nba") result = await fetchNba();
+    else if (league.source === "espn") result = await fetchEspn(league, prev);
     result.matches.sort((a, b) => a.kickoff.localeCompare(b.kickoff));
     const done = result.matches.filter((m) => m.status === "FT").length;
     console.log(`  ${result.matches.length} matches, ${done} finished`);
@@ -250,6 +278,7 @@ for (const league of leagues) {
       fullAt: league.source !== "tsdb" || (full && !result.partial) ? new Date().toISOString() : prev?.fullAt,
       matches: result.matches,
       ...(result.rounds ? { rounds: result.rounds } : {}),
+      ...(result.days ? { days: result.days } : {}),
     }));
   } catch (err) {
     failures++;

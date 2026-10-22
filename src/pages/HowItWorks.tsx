@@ -50,8 +50,8 @@ export default function HowItWorks() {
       <p className="mt-4 text-chalk/85">
         Fixtures and results for the big European leagues come from{" "}
         <a className="underline underline-offset-2" href="https://github.com/openfootball/football.json">openfootball</a>, a public-domain project.
-        Ligat Winner, Israeli basketball, EuroLeague and the European cups come from <a className="underline underline-offset-2" href="https://www.thesportsdb.com">TheSportsDB</a>,
-        and NBA games from the NBA's public schedule. Everything refreshes every three hours.
+        Ligat Winner, Israeli basketball and EuroLeague come from <a className="underline underline-offset-2" href="https://www.thesportsdb.com">TheSportsDB</a>,
+        and the European cups and NBA from ESPN's public scoreboards. Everything refreshes every three hours.
       </p>
     </article>
   );
