@@ -17,7 +17,8 @@ export function MatchCard({ m, leagueKey, showLeague = false }: { m: Match; leag
   const sels = p?.length === 3 ? ["1", "X", "2"] : ["1", "2"];
   const market = p?.length === 3 ? "1X2" : "Moneyline";
   const mine = legs.find((l) => l.matchId === m.id && l.market === market);
-  const homeC = useTeamColor(m.home, sport), awayC = useTeamColor(m.away, sport);
+  const homeC = useTeamColor(m.home, sport), awayRaw = useTeamColor(m.away, sport);
+  const awayC = similar(homeC, awayRaw) ? "#55665C" : awayRaw; // two red clubs still need two sides
   const value = w?.edge?.some((e) => e >= VALUE_EDGE) || (w?.best && w.best.edge >= VALUE_EDGE);
   const fav = p ? p.indexOf(Math.max(...p)) : -1;
 
@@ -51,10 +52,10 @@ export function MatchCard({ m, leagueKey, showLeague = false }: { m: Match; leag
           </div>
         ))}
         {p && (
-          <div className="mt-2.5 flex h-2 overflow-hidden rounded-full bg-well" aria-label={sels.map((s, i) => `${s} ${pct(p[i])}`).join(", ")}>
-            <span style={{ width: `${p[0] * 100}%`, background: homeC }} />
-            {p.length === 3 && <span className="border-x-2 border-card bg-draw/45" style={{ width: `${p[1] * 100}%` }} />}
-            <span style={{ width: `${p[p.length - 1] * 100}%`, background: awayC }} />
+          <div className="mt-2.5 flex h-2 gap-[3px] overflow-hidden rounded-full" aria-label={sels.map((s, i) => `${s} ${pct(p[i])}`).join(", ")}>
+            <span className="rounded-l-full" style={{ width: `${p[0] * 100}%`, background: homeC }} />
+            {p.length === 3 && <span className="bg-draw/45" style={{ width: `${p[1] * 100}%` }} />}
+            <span className="rounded-r-full" style={{ width: `${p[p.length - 1] * 100}%`, background: awayC }} />
           </div>
         )}
         <div className="mt-2 flex items-center justify-between gap-3 text-[11px] text-ink-faint">
@@ -86,4 +87,10 @@ export function MatchCard({ m, leagueKey, showLeague = false }: { m: Match; leag
       )}
     </article>
   );
+}
+
+function similar(a: string, b: string) {
+  const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const [x, y] = [rgb(a), rgb(b)];
+  return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]) < 90;
 }

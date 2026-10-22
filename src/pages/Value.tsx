@@ -35,7 +35,8 @@ export default function Value() {
   const value = inLeague.filter((r) => r.edge >= VALUE_EDGE);
   const allValue = rows.filter((r) => r.edge >= VALUE_EDGE);
   const shown = onlyValue ? (value.length ? value : inLeague.slice(0, 10)) : inLeague.slice(0, 150);
-  const top = (allValue.length ? allValue : rows).filter((r, i, a) => a.findIndex((x) => x.m.id === r.m.id) === i).slice(0, 3);
+  // The three best prices, one per game: value first, topped up with the closest.
+  const top = rows.filter((r, i, a) => a.findIndex((x) => x.m.id === r.m.id) === i).slice(0, 3);
 
   return (
     <>
@@ -49,9 +50,9 @@ export default function Value() {
             We read every price on Winner's coupon for the games we cover, put a fair price on each one, and flag the bets where Winner pays at least {pct(VALUE_EDGE)} too much.
           </p>
           {index?.winner && (
-            <dl className="mt-10 grid max-w-3xl grid-cols-2 gap-6 sm:grid-cols-4">
+            <dl className="mt-10 grid max-w-4xl grid-cols-2 gap-x-8 gap-y-6 md:grid-cols-4">
               <Stat n={String(allValue.length)} label="value bets right now" tone="text-[#4ADE80]" />
-              <Stat n={rows[0] ? signedPct(rows[0].edge).replace(".0%", "%") : "–"} label="best edge" />
+              <Stat n={rows[0] ? `${rows[0].edge > 0 ? "+" : ""}${Math.round(rows[0].edge * 100)}%` : "–"} label="best edge" />
               <Stat n={pct(avgMargin)} label="Winner's average margin" />
               <Stat n={String(rows.length)} label={`prices checked, ${ago(index.winner.fetchedAt)}`} />
             </dl>
@@ -66,7 +67,7 @@ export default function Value() {
           {/* Top value, as printed tickets */}
           <section className="bleed bg-pitch-deep">
             <div className="mx-auto max-w-page px-4 pb-12 pt-10 md:px-6">
-              <h2 className="font-display text-2xl font-extrabold text-white">{allValue.length ? "Best value right now" : "Closest to value right now"}</h2>
+              <h2 className="font-display text-2xl font-extrabold text-white">{allValue.length ? "Best prices right now" : "Closest to value right now"}</h2>
               <div className="mt-6 grid gap-6 md:grid-cols-3">
                 {top.map((r, i) => <ValueTicket key={r.key} r={r} delay={i * 0.08} />)}
               </div>
@@ -126,7 +127,7 @@ export default function Value() {
 function Stat({ n, label, tone = "text-white" }: { n: string; label: string; tone?: string }) {
   return (
     <div>
-      <dd className={`num font-display text-5xl font-extrabold leading-none ${tone}`}>{n}</dd>
+      <dd className={`num font-display text-4xl font-extrabold leading-none md:text-5xl ${tone}`}>{n}</dd>
       <dt className="mt-1.5 text-sm text-white/60">{label}</dt>
     </div>
   );
