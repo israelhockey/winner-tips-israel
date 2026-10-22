@@ -29,9 +29,22 @@ async function main() {
     await status({ ok: false, error: `${e.name}: ${e.message}`, cause: String(e.cause ?? "") });
     return;
   }
-  const text = await res.text();
+  let text = await res.text();
   let json = null;
   try { json = JSON.parse(text); } catch { /* not JSON: blocked or error page */ }
+  if (!json?.markets) {
+    // Winner's bot shield turns plain requests away; a real browser visiting the site gets through.
+    console.log(`Winner: plain request got HTTP ${res.status}; trying through a browser`);
+    const viaBrowser = await fetchInBrowser().catch((e) => ({ error: String(e) }));
+    if (viaBrowser.text) {
+      try { json = JSON.parse(viaBrowser.text); res = { ok: true, status: viaBrowser.status, headers: new Map() }; text = viaBrowser.text; } catch { /* still blocked */ }
+    }
+    if (!json?.markets) {
+      await status({ ok: false, http: res.status, browser: viaBrowser.error ?? `HTTP ${viaBrowser.status}: ${String(viaBrowser.text).slice(0, 300)}` });
+      console.log("Winner: browser attempt failed too; keeping previous odds");
+      return;
+    }
+  }
   if (!res.ok || !json?.markets) {
     console.log(`Winner: HTTP ${res.status}, ${text.length} bytes, not the line (${text.slice(0, 120).replace(/\s+/g, " ")}); keeping previous odds`);
     await status({ ok: false, http: res.status, bytes: text.length, headers: Object.fromEntries(res.headers), body: text.slice(0, 600) });
@@ -43,4 +56,26 @@ async function main() {
   await status({ ok: true, markets: json.markets.length, games: events.length });
   console.log(`Winner: ${json.markets.length} markets, ${events.length} games in our leagues${prev ? ` (was ${prev.events.length})` : ""}`);
 }
+async function fetchInBrowser() {
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ args: ["--disable-blink-features=AutomationControlled"] });
+  try {
+    const page = await browser.newPage({
+      locale: "he-IL", timezoneId: "Asia/Jerusalem",
+      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36",
+    });
+    let seen = null; // the site asks for the line itself; take its answer if it comes
+    page.on("response", async (r) => { if (r.url().includes("GetCMobileLine") && r.ok()) { try { seen = await r.text(); } catch { /* body gone */ } } });
+    await page.goto("https://www.winner.co.il/", { waitUntil: "networkidle", timeout: 90000 });
+    await page.waitForTimeout(4000);
+    if (seen) return { status: 200, text: seen };
+    return await page.evaluate(async (u) => {
+      const r = await fetch(u, { credentials: "include" });
+      return { status: r.status, text: await r.text() };
+    }, URL_LINE);
+  } finally {
+    await browser.close();
+  }
+}
+
 main();

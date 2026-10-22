@@ -422,7 +422,8 @@ function withWinner(m, sport) {
 // ---------------------------------------------------------------------------------------------
 
 const GENERIC = new Set(["fc", "afc", "cf", "sc", "bc", "ac", "as", "ss", "ssc", "us", "ud", "cd", "rc", "rcd", "sv", "vfb", "vfl", "tsg", "fsv", "bsc", "club", "de", "da", "the", "kk", "bk", "basket", "basketball", "baloncesto", "basketbol", "calcio", "football", "futbol", "1", "04", "05", "07", "1899", "1909", "1913", "1901", "1907", "1963", "29"]);
-const tokens = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter((t) => t && !GENERIC.has(t));
+const SAME = { koln: "cologne", munchen: "munich", lyonnais: "lyon", brestois: "brest", hamburger: "hamburg", basquet: "", baloncesto: "", pallacanestro: "", olympiacos: "olympiakos", fenerbahce: "fenerbahce", internazionale: "inter" };
+const tokens = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().split(" ").map((t) => SAME[t] ?? t).filter((t) => t && !GENERIC.has(t));
 
 function logoFinder(teamsRaw) {
   const bySport = { football: [], basketball: [] };

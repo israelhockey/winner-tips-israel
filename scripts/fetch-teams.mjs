@@ -12,7 +12,7 @@ const RAW = new URL("../data/raw/", import.meta.url);
 const TSDB = `https://www.thesportsdb.com/api/v1/json/${process.env.TSDB_KEY || "123"}`;
 const ESPN = "https://site.api.espn.com/apis/site/v2/sports";
 const TSDB_GAP_MS = Number(process.env.TSDB_GAP_MS || 7000);
-const SEARCHES_PER_RUN = 12;
+const SEARCHES_PER_RUN = 30;
 
 const ESPN_LISTS = {
   "il-premier": "soccer/isr.1", epl: "soccer/eng.1", laliga: "soccer/esp.1", seriea: "soccer/ita.1", bundesliga: "soccer/ger.1",
@@ -72,7 +72,8 @@ for (const lg of LEAGUES) {
 const norm = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 const known = new Set(Object.keys(teams).map((k) => { const [s, n] = k.split("|"); return `${s}|${norm(n)}`; }));
 const tried = new Set(prev.tried ?? []);
-const missing = [...ours].filter((k) => { const [s, n] = k.split("|"); return !known.has(`${s}|${norm(n)}`) && !tried.has(k); });
+const missing = [...ours].filter((k) => { const [s, n] = k.split("|"); return !known.has(`${s}|${norm(n)}`) && !tried.has(k); })
+  .sort((a, b) => Number(b.startsWith("basketball")) - Number(a.startsWith("basketball")));
 for (const k of missing.slice(0, SEARCHES_PER_RUN)) {
   const [sport, name] = k.split("|");
   const j = await get(`${TSDB}/searchteams.php?t=${encodeURIComponent(name.replace(/^(FC|AFC|SC|BC)\s+|\s+(FC|AFC|SC|BC)$/g, ""))}`, true);
