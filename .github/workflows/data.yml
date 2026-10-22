@@ -41,6 +41,10 @@ jobs:
         env:
           TSDB_KEY: ${{ secrets.TSDB_KEY }}
         run: node scripts/fetch-data.mjs ${{ inputs.full && '--full' || '' }}
+      - name: Fetch Winner odds
+        continue-on-error: true
+        timeout-minutes: 3
+        run: node scripts/fetch-winner.mjs
       - name: Build model, tables and picks ledger
         if: always()
         run: node scripts/build-model.mjs
