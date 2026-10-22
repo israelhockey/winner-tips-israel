@@ -341,7 +341,7 @@ const matchById = new Map();
 
 for (const lg of LEAGUES) {
   const data = raw[lg.key];
-  if (!data) continue;
+  if (!data?.matches?.length) continue; // nothing fetched yet: leave it off the site until it is
   const matches = data.matches.map((m) => ({ ...m, home: cleanName(m.home), away: cleanName(m.away) }));
   for (const m of matches) matchById.set(m.id, { ...m, league: lg.key });
   const seasons = [...new Set(matches.map((m) => m.season))];
