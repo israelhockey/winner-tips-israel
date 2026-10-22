@@ -24,16 +24,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-1.48.2
       - name: Fetch Winner odds
         continue-on-error: true
-        timeout-minutes: 8
+        timeout-minutes: 5
         run: |
-          npm install --no-save --no-audit --no-fund playwright@1.48.2
-          npx playwright install --with-deps chromium
+          npm install --no-save --no-audit --no-fund playwright-core@1.48.2
           node scripts/fetch-winner.mjs
       - name: Re-price and update the model picks
         run: node scripts/build-model.mjs
