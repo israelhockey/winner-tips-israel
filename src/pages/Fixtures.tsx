@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useIndex, useLeague } from "@/lib/data";
-import { dayKey, dayLabel, ago } from "@/lib/format";
-import { FixtureRow } from "@/components/FixtureRow";
+import { ago } from "@/lib/format";
+import { Board } from "@/components/Board";
 import { Loading } from "@/components/bits";
 import { HowToRead } from "@/components/HowToRead";
 import type { Match } from "@/lib/types";
@@ -17,14 +17,9 @@ export default function Fixtures() {
 
   const matches: Match[] = useMemo(() => {
     if (key === "all") return index?.upcoming ?? [];
-    return (league?.upcoming ?? []).map((m) => ({ ...m, league: key, leagueName: league?.name }));
+    return (league?.upcoming ?? []).map((m) => ({ ...m, league: key, leagueName: league?.name, sport: league?.sport }));
   }, [key, index, league]);
 
-  const groups = useMemo(() => {
-    const g = new Map<string, Match[]>();
-    for (const m of matches) { const k = dayKey(m.kickoff); g.set(k, [...(g.get(k) ?? []), m]); }
-    return [...g.values()];
-  }, [matches]);
 
   const football = index?.leagues.filter((l) => l.sport === "football") ?? [];
   const basket = index?.leagues.filter((l) => l.sport === "basketball") ?? [];
@@ -35,7 +30,7 @@ export default function Fixtures() {
     <>
       <h1 className="h1">Fixtures and model odds</h1>
       <p className="mt-3 max-w-2xl muted">
-        Our probability for every result and the fair price behind it. Tap a result to add it to your ticket, or open a game for the full preview.
+        Every game we cover with our chance of each result and Winner's odds. Pick a league, pick a day, tap a price to add it to your ticket, or open a game for the full preview.
       </p>
 
       <HowToRead className="mt-6" />
@@ -53,15 +48,10 @@ export default function Fixtures() {
       </div>
       {meta && <p className="mt-4 text-xs text-ink-faint">Data updated {ago(meta.fetchedAt)}</p>}
 
-      <div className="mt-8 space-y-8">
-        {!index || (key !== "all" && !league) ? <Loading what="fixtures" /> : groups.length === 0 ? (
+      <div className="mt-8">
+        {!index || (key !== "all" && !league) ? <Loading what="fixtures" /> : matches.length === 0 ? (
           <p className="panel p-6 muted">No upcoming games here yet. Fixtures appear as soon as they're scheduled.</p>
-        ) : groups.map((ms) => (
-          <section key={ms[0].kickoff}>
-            <h2 className="mb-2 text-sm font-semibold muted">{dayLabel(ms[0].kickoff)}</h2>
-            <div className="panel">{ms.map((m) => <FixtureRow key={m.id} m={m} leagueKey={m.league!} showLeague={key === "all"} />)}</div>
-          </section>
-        ))}
+        ) : <Board key={key} matches={matches} leagueFilter={false} />}
       </div>
     </>
   );

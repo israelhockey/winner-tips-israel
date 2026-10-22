@@ -33,3 +33,15 @@ export const useIndex = () => useJson<Index>(`${BASE}data/index.json`);
 export const useLeague = (key: string | undefined) => useJson<League>(key ? `${BASE}data/leagues/${key}.json` : null);
 export const useRecord = () => useJson<PicksRecord>(`${BASE}data/record.json`);
 export const loadLeague = (key: string) => getJson<League>(`${BASE}data/leagues/${key}.json`);
+
+// Club logos: "<sport>|<team>" -> [logo url, club colour]. Written by the data job.
+export type Logos = Record<string, [string, string | null]>;
+export const useLogos = () => useJson<Logos>(`${BASE}data/logos.json`);
+
+// Ask the logo hosts for a small copy: ESPN resizes on its CDN, TheSportsDB has fixed sizes.
+export function logoSrc(url: string, px: number) {
+  const want = Math.ceil(px * 2);
+  if (url.includes("a.espncdn.com/i/")) return `https://a.espncdn.com/combiner/i?img=${encodeURIComponent(url.replace("https://a.espncdn.com", ""))}&w=${want}&h=${want}`;
+  if (url.includes("thesportsdb.com")) return `${url}/${want <= 64 ? "tiny" : "small"}`;
+  return url;
+}

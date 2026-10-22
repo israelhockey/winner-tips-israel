@@ -32,14 +32,14 @@ export default function MatchPage() {
       <header className="mt-6 panel overflow-hidden p-6 md:p-8">
         <div className="text-sm muted">{lg.name}{m.round ? `, round ${m.round}` : ""}</div>
         <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-          <TeamSide name={m.home} he={m.winner?.he[0]} pos={pos(m.home)} form={form(m.home)} />
+          <TeamSide name={m.home} he={m.winner?.he[0]} pos={pos(m.home)} form={form(m.home)} sport={lg.sport} />
           <div className="text-center">
             {m.status === "FT" ? <div className="display num text-4xl font-extrabold">{m.hs}–{m.as}</div> : (
               <><div className="display num text-2xl font-bold">{time(m.kickoff)}</div><div className="text-sm muted">{dayLabel(m.kickoff)}</div></>
             )}
             {m.venue && <div className="mt-1 text-xs text-ink-faint">{m.venue}</div>}
           </div>
-          <TeamSide name={m.away} he={m.winner?.he[1]} pos={pos(m.away)} form={form(m.away)} right />
+          <TeamSide name={m.away} he={m.winner?.he[1]} pos={pos(m.away)} form={form(m.away)} right sport={lg.sport} />
         </div>
         {m.model && (
           <div className="mt-8">
@@ -69,10 +69,10 @@ export default function MatchPage() {
   );
 }
 
-function TeamSide({ name, he, pos, form, right }: { name: string; he?: string; pos: number | null; form: string[]; right?: boolean }) {
+function TeamSide({ name, he, pos, form, right, sport }: { name: string; he?: string; pos: number | null; form: string[]; right?: boolean; sport: string }) {
   return (
     <div className={`flex flex-col gap-2 ${right ? "items-end text-right" : ""}`}>
-      <TeamMark name={name} size={44} />
+      <TeamMark name={name} size={56} sport={sport} />
       <div className="display text-lg font-bold md:text-2xl">{name}</div>
       {he && <div dir="rtl" lang="he" className={`-mt-1.5 text-sm text-ink-muted ${right ? "text-right" : "text-left"}`}>{he}</div>}
       <div className="text-xs muted">{pos ? `${pos}${["th", "st", "nd", "rd"][pos % 10 > 3 || [11, 12, 13].includes(pos % 100) ? 0 : pos % 10]} in the table` : ""}</div>

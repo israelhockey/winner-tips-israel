@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useLeague } from "@/lib/data";
-import { ago, pct, shortDate, dayKey, dayLabel } from "@/lib/format";
+import { ago, pct, shortDate } from "@/lib/format";
 import { Form, Loading, Empty, TeamMark } from "@/components/bits";
-import { FixtureRow } from "@/components/FixtureRow";
+import { Board } from "@/components/Board";
 import { HowToRead } from "@/components/HowToRead";
-import type { League, Match } from "@/lib/types";
+import type { League } from "@/lib/types";
 
 const TABS = ["Table", "Fixtures", "Results", "Ratings", "Model check"] as const;
 type Tab = (typeof TABS)[number];
@@ -62,7 +62,7 @@ function TableView({ lg }: { lg: League }) {
           {lg.table.map((r, i) => (
             <tr key={r.team} className="border-b border-line text-right last:border-0">
               <td className="px-3 py-2.5 text-left muted">{i + 1}</td>
-              <td className="px-3 py-2.5 text-left"><span className="flex items-center gap-2 font-semibold"><TeamMark name={r.team} size={22} />{r.team}</span></td>
+              <td className="px-3 py-2.5 text-left"><span className="flex items-center gap-2 font-semibold"><TeamMark name={r.team} size={22} sport={lg.sport} />{r.team}</span></td>
               <td className="px-3 py-2.5">{r.p}</td><td className="px-3 py-2.5">{r.w}</td>{fb && <td className="px-3 py-2.5">{r.d}</td>}
               <td className="px-3 py-2.5">{r.l}</td><td className="px-3 py-2.5">{r.gd > 0 ? `+${r.gd}` : r.gd}</td>
               <td className="px-3 py-2.5 font-bold">{r.pts}</td>
@@ -80,21 +80,12 @@ function TableView({ lg }: { lg: League }) {
 }
 
 function FixturesView({ lg }: { lg: League }) {
-  const groups = useMemo(() => {
-    const g = new Map<string, Match[]>();
-    for (const m of lg.upcoming) { const k = dayKey(m.kickoff); g.set(k, [...(g.get(k) ?? []), m]); }
-    return [...g.values()];
-  }, [lg]);
-  if (!groups.length) return <p className="panel p-6 muted">No games scheduled in the next three weeks.</p>;
+  const matches = useMemo(() => lg.upcoming.map((m) => ({ ...m, league: lg.key, leagueName: lg.name, sport: lg.sport })), [lg]);
+  if (!matches.length) return <p className="panel p-6 muted">No games scheduled in the next three weeks.</p>;
   return (
     <div className="space-y-6">
       <HowToRead />
-      {groups.map((ms) => (
-        <section key={ms[0].kickoff}>
-          <h2 className="mb-2 text-sm font-semibold muted">{dayLabel(ms[0].kickoff)}</h2>
-          <div className="panel">{ms.map((m) => <FixtureRow key={m.id} m={m} leagueKey={lg.key} />)}</div>
-        </section>
-      ))}
+      <Board matches={matches} leagueFilter={false} />
     </div>
   );
 }

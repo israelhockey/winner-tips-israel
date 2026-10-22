@@ -1,36 +1,26 @@
-import { useMemo, useState } from "react";
+
 import { Link } from "react-router-dom";
 import { useIndex, useRecord } from "@/lib/data";
 import { FREE_PICKS_PER_WEEK } from "@/lib/config";
 import { useApp } from "@/lib/state";
 import { unlockedIds } from "@/lib/access";
-import { dayKey, dayLabel, pct } from "@/lib/format";
-import { FixtureRow } from "@/components/FixtureRow";
+import { pct } from "@/lib/format";
+import { Board } from "@/components/Board";
 import { PickCard } from "@/components/PickCard";
 import { Coupon } from "@/components/Coupon";
 import { Ticker } from "@/components/Ticker";
 import { HowToRead } from "@/components/HowToRead";
 import { ValueStrip } from "@/components/ValueStrip";
 import { Section, TextLink, Loading } from "@/components/bits";
-import type { Match } from "@/lib/types";
 
 export default function Home() {
   const { data: index, error } = useIndex();
   const { data: record } = useRecord();
   const { tier } = useApp();
-  const [league, setLeague] = useState<string>("all");
 
   const pending = record?.picks.filter((p) => p.result === "pending") ?? [];
   const open = record ? unlockedIds(record.picks, tier) : new Set<string>();
 
-  const leagues = useMemo(() => (index?.leagues ?? []).filter((l) => l.upcoming > 0)
-    .sort((a, b) => Number(b.featured) - Number(a.featured)), [index]);
-  const board = useMemo(() => (index?.upcoming ?? []).filter((m) => league === "all" || m.league === league).slice(0, 16), [index, league]);
-  const byDay = useMemo(() => {
-    const g = new Map<string, Match[]>();
-    for (const m of board) { const k = dayKey(m.kickoff); g.set(k, [...(g.get(k) ?? []), m]); }
-    return [...g.values()];
-  }, [board]);
   const israel = (index?.upcoming ?? []).filter((m) => m.league === "il-premier");
   const couponGames = (israel.length >= 3 ? israel : index?.upcoming ?? []).slice(0, 6);
   const checked = (index?.leagues ?? []).filter((l) => l.check)
@@ -83,27 +73,10 @@ export default function Home() {
 
       <Section title="This week's board" action={<TextLink to="/fixtures">All fixtures</TextLink>} className="mt-14">
         <p className="-mt-1 mb-5 max-w-2xl muted">
-          Our chance of each result, with Winner's odds in the corner. The highlighted box is the most likely result. Tap any box to put it on your ticket.
+          Every game, one day at a time. The bar shows each result's chance in the clubs' colours; underneath are Winner's odds, with value in green. Tap a price to put it on your ticket.
         </p>
         <HowToRead className="mb-6" />
-        <div className="mb-5 flex flex-wrap gap-2">
-          <button className={`chip ${league === "all" ? "chip-on" : ""}`} onClick={() => setLeague("all")}>All leagues</button>
-          {leagues.map((l) => (
-            <button key={l.key} className={`chip ${league === l.key ? "chip-on" : ""}`} onClick={() => setLeague(l.key)}>{l.name}</button>
-          ))}
-        </div>
-        {error ? <p className="muted">Couldn't load fixtures. Refresh to try again.</p> : !index ? <Loading what="fixtures" /> : board.length === 0 ? (
-          <p className="panel p-6 muted">No games in the next eight days for this league.</p>
-        ) : (
-          <div className="space-y-8">
-            {byDay.map((ms) => (
-              <div key={ms[0].kickoff}>
-                <h3 className="mb-2 font-display text-xl font-bold">{dayLabel(ms[0].kickoff)}</h3>
-                <div className="panel">{ms.map((m) => <FixtureRow key={m.id} m={m} leagueKey={m.league!} showLeague={league === "all"} />)}</div>
-              </div>
-            ))}
-          </div>
-        )}
+        {error ? <p className="muted">Couldn't load fixtures. Refresh to try again.</p> : !index ? <Loading what="fixtures" /> : <Board matches={index.upcoming} />}
       </Section>
 
       <section className="bleed mt-20 bg-card">

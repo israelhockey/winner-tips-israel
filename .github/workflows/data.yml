@@ -41,6 +41,10 @@ jobs:
         env:
           TSDB_KEY: ${{ secrets.TSDB_KEY }}
         run: node scripts/fetch-data.mjs ${{ inputs.full && '--full' || '' }}
+      - name: Fetch club logos
+        continue-on-error: true
+        timeout-minutes: 6
+        run: node scripts/fetch-teams.mjs
       - name: Fetch Winner odds
         continue-on-error: true
         timeout-minutes: 3

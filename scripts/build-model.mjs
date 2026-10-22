@@ -418,6 +418,37 @@ function withWinner(m, sport) {
 }
 
 // ---------------------------------------------------------------------------------------------
+// Club logos: our team names matched to the names ESPN and TheSportsDB use
+// ---------------------------------------------------------------------------------------------
+
+const GENERIC = new Set(["fc", "afc", "cf", "sc", "bc", "ac", "as", "ss", "ssc", "us", "ud", "cd", "rc", "rcd", "sv", "vfb", "vfl", "tsg", "fsv", "bsc", "club", "de", "da", "the", "kk", "bk", "basket", "basketball", "baloncesto", "basketbol", "calcio", "football", "futbol", "1", "04", "05", "07", "1899", "1909", "1913", "1901", "1907", "1963", "29"]);
+const tokens = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter((t) => t && !GENERIC.has(t));
+
+function logoFinder(teamsRaw) {
+  const bySport = { football: [], basketball: [] };
+  for (const [k, v] of Object.entries(teamsRaw?.teams ?? {})) {
+    const [sport, name] = k.split("|");
+    bySport[sport]?.push({ t: tokens(name), key: tokens(name).join(" "), v });
+  }
+  return (sport, name) => {
+    const t = tokens(name), key = t.join(" ");
+    let best = null, bestScore = 0;
+    for (const c of bySport[sport] ?? []) {
+      let score;
+      if (c.key === key) score = 1;
+      else {
+        const inter = c.t.filter((x) => t.includes(x)).length;
+        const small = Math.min(c.t.length, t.length);
+        if (!small) continue;
+        score = inter === small ? 0.85 - 0.04 * Math.abs(c.t.length - t.length) : inter / new Set([...c.t, ...t]).size;
+      }
+      if (score > bestScore) { bestScore = score; best = c.v; }
+    }
+    return bestScore >= 0.6 ? best : null;
+  };
+}
+
+// ---------------------------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------------------------
 
@@ -459,6 +490,9 @@ if (winnerRaw?.events?.length) {
 }
 
 const index = { updatedAt: new Date().toISOString(), leagues: [], upcoming: [] };
+const findLogo = logoFinder(await load(new URL("teams.json", RAW)));
+const logos = {};
+const addLogo = (sport, name) => { const k = `${sport}|${name}`; if (k in logos) return; const v = findLogo(sport, name); if (v) logos[k] = [v.logo, v.color]; };
 const matchById = new Map();
 
 for (const lg of LEAGUES) {
@@ -466,6 +500,7 @@ for (const lg of LEAGUES) {
   if (!data?.matches?.length) continue; // nothing fetched yet: leave it off the site until it is
   const matches = data.matches.map((m) => ({ ...m, home: cleanName(m.home), away: cleanName(m.away) }));
   for (const m of matches) matchById.set(m.id, { ...m, league: lg.key });
+  for (const m of matches) if (Date.parse(m.kickoff) > NOW - 400 * DAY) { addLogo(lg.sport, m.home); addLogo(lg.sport, m.away); }
   const seasons = [...new Set(matches.map((m) => m.season))];
   const current = seasons.at(-1);
   const currentMatches = matches.filter((m) => m.season === current);
@@ -528,4 +563,6 @@ const record = buildRecord(picks.map((p) => ({ ...p, leagueName: leagueName[p.le
 index.record = record.summary;
 await writeFile(new URL("record.json", OUT), JSON.stringify(record));
 await writeFile(new URL("index.json", OUT), JSON.stringify(index));
+await writeFile(new URL("logos.json", OUT), JSON.stringify(logos));
+console.log(`logos: ${Object.keys(logos).length} teams with a logo`);
 console.log(`index: ${index.leagues.length} leagues, ${index.upcoming.length} fixtures in the next 8 days, ${record.summary.picks} picks in the ledger`);
