@@ -1,0 +1,54 @@
+name: Refresh league data
+
+# Pulls fixtures and results from the free sources, rebuilds the model and the picks ledger,
+# and commits the result to public/data so the site always ships fresh numbers.
+on:
+  schedule:
+    - cron: "17 */3 * * *" # every 3 hours
+  workflow_dispatch:
+    inputs:
+      full:
+        description: "Re-fetch every round, not just open ones"
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - "scripts/**"
+      - "content/picks.json"
+      - ".github/workflows/data.yml"
+
+concurrency:
+  group: data
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fetch fixtures and results
+        env:
+          TSDB_KEY: ${{ secrets.TSDB_KEY }}
+        run: node scripts/fetch-data.mjs ${{ inputs.full && '--full' || '' }}
+      - name: Build model, tables and picks ledger
+        run: node scripts/build-model.mjs
+      - name: Commit updated data
+        run: |
+          git config user.name "data-bot"
+          git config user.email "data-bot@users.noreply.github.com"
+          git add data/raw public/data
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "Refresh league data"
+            git pull --rebase origin main
+            git push
+          fi
