@@ -11,7 +11,8 @@ export function FixtureRow({ m, leagueKey, showLeague = false, compact = false }
   const { addLeg, legs, removeLeg } = useApp();
   const fm = isFootballModel(m.model) ? m.model : null;
   const bm = isBasketModel(m.model) ? m.model : null;
-  const probs = fm ? [fm["1x2"]["1"], fm["1x2"].X, fm["1x2"]["2"]] : bm ? [bm.win["1"], bm.win["2"]] : null;
+  const w = m.winner;
+  const probs = w?.p ?? (fm ? [fm["1x2"]["1"], fm["1x2"].X, fm["1x2"]["2"]] : bm ? [bm.win["1"], bm.win["2"]] : null);
   const sels = fm ? ["1", "X", "2"] : ["1", "2"];
   const market = fm ? "1X2" : "Moneyline";
   const event = `${m.home} v ${m.away}`;
@@ -24,7 +25,7 @@ export function FixtureRow({ m, leagueKey, showLeague = false, compact = false }
     const key = `${m.id}|${market}|${s}`;
     if (mine?.key === key) return removeLeg(key);
     addLeg({ key, matchId: m.id, league: leagueKey, event, kickoff: m.kickoff, market, selection: s,
-      label: s === "1" ? m.home : s === "2" ? m.away : "Draw", modelP: probs[i], odds: null });
+      label: s === "1" ? m.home : s === "2" ? m.away : "Draw", modelP: probs[i], odds: w?.odds?.[i] ?? null });
   };
 
   const meta = fm
@@ -45,9 +46,10 @@ export function FixtureRow({ m, leagueKey, showLeague = false, compact = false }
           <TeamMark name={m.away} size={20} /> <span className="truncate">{m.away}</span>
         </div>
         {meta && <div className="num mt-1.5 text-[11px] text-ink-faint">{meta}</div>}
+        {w && <div dir="rtl" lang="he" className="mt-0.5 text-left text-[11px] text-ink-faint">{w.he[0]} – {w.he[1]}</div>}
       </Link>
       <div className={compact ? "col-span-2" : "col-span-2 md:col-span-1"}>
-        {probs ? <CouponBoxes p={probs} selected={selected} onPick={pick} size="sm" /> : <span className="text-sm muted">No model yet</span>}
+        {probs ? <CouponBoxes p={probs} selected={selected} onPick={pick} size="sm" odds={w?.odds} edges={w?.edge} /> : <span className="text-sm muted">No model yet</span>}
       </div>
     </div>
   );

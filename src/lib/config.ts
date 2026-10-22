@@ -10,3 +10,6 @@ export const PRICES = { monthly: 59, season: 499 };
 
 // All times on the site are shown in Israel time.
 export const TZ = "Asia/Jerusalem";
+
+// A Winner price is "value" when our chance × Winner's odds beats 1 by at least this much.
+export const VALUE_EDGE = 0.05;

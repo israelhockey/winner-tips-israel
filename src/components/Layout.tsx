@@ -100,6 +100,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <p className="leading-relaxed">
               Fixtures and results from <a className="underline underline-offset-2 hover:text-white" href="https://github.com/openfootball/football.json">openfootball</a> (public domain),{" "}
               <a className="underline underline-offset-2 hover:text-white" href="https://www.thesportsdb.com">TheSportsDB</a> and ESPN's public scoreboards.
+              Odds from Winner's public site, every three hours.
             </p>
           </div>
         </div>

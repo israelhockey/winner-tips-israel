@@ -18,6 +18,30 @@ export interface BasketModel {
   sd: number;
 }
 
+export interface WinnerMarket {
+  market: string;            // "1X2", "Handicap", "Goals", "Winner", "Points"
+  line: number | null;
+  sels: string[];
+  labels: string[];
+  odds: number[];            // Winner's odds
+  p: number[];               // our chance: model blended with Winner's margin-free prices
+  model: number[];           // the model alone
+  fair: number[];            // Winner's prices with the margin taken out
+  edge: number[];            // p × odds − 1: positive means Winner pays more than it should
+  margin: number;
+}
+
+export interface WinnerInfo {
+  he: [string, string];      // team names as Winner writes them
+  fetchedAt: string;
+  p: number[] | null;        // blended chance for the main result boxes
+  odds: number[] | null;     // Winner's odds for those boxes
+  edge: number[] | null;
+  margin: number;
+  markets: WinnerMarket[];
+  best: { market: string; line: number | null; sel: string; label: string; odds: number; p: number; edge: number };
+}
+
 export interface Match {
   id: string;
   season: string;
@@ -33,6 +57,7 @@ export interface Match {
   league?: string;
   leagueName?: string;
   sport?: Sport;
+  winner?: WinnerInfo;
 }
 
 export interface LeagueSummary {
@@ -69,6 +94,7 @@ export interface Index {
   leagues: LeagueSummary[];
   upcoming: Match[];
   record: RecordSummary;
+  winner: { fetchedAt: string; games: number; valueEdge: number } | null;
 }
 
 export interface TableRow {

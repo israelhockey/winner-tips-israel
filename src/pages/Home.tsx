@@ -10,6 +10,7 @@ import { PickCard } from "@/components/PickCard";
 import { Coupon } from "@/components/Coupon";
 import { Ticker } from "@/components/Ticker";
 import { HowToRead } from "@/components/HowToRead";
+import { ValueStrip } from "@/components/ValueStrip";
 import { Section, TextLink, Loading } from "@/components/bits";
 import type { Match } from "@/lib/types";
 
@@ -66,6 +67,12 @@ export default function Home() {
       </section>
       {index && <Ticker matches={index.upcoming} />}
 
+      {index?.winner && (
+        <Section title="Best value on Winner" action={<TextLink to="/value">Value finder</TextLink>} className="mt-14">
+          <ValueStrip matches={index.upcoming} fetchedAt={index.winner.fetchedAt} />
+        </Section>
+      )}
+
       {pending.length > 0 && (
         <Section title="On the card" action={<TextLink to="/picks">All picks</TextLink>}>
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -76,7 +83,7 @@ export default function Home() {
 
       <Section title="This week's board" action={<TextLink to="/fixtures">All fixtures</TextLink>} className="mt-14">
         <p className="-mt-1 mb-5 max-w-2xl muted">
-          Our chance of each result, with the fair price in the corner. The highlighted box is the most likely result. Tap any box to put it on your ticket.
+          Our chance of each result, with Winner's odds in the corner. The highlighted box is the most likely result. Tap any box to put it on your ticket.
         </p>
         <HowToRead className="mb-6" />
         <div className="mb-5 flex flex-wrap gap-2">

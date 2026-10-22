@@ -1,8 +1,9 @@
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Plus, Check } from "lucide-react";
 import { useLeague } from "@/lib/data";
-import { dayLabel, time, fair, pct } from "@/lib/format";
-import { isBasketModel, isFootballModel, type League, type Match } from "@/lib/types";
+import { dayLabel, time, fair, pct, ago, signedPct } from "@/lib/format";
+import { isBasketModel, isFootballModel, type League, type Match, type WinnerMarket } from "@/lib/types";
+import { VALUE_EDGE } from "@/lib/config";
 import { useApp } from "@/lib/state";
 import { CouponBoxes } from "@/components/CouponBoxes";
 import { Form, Loading, TeamMark, Empty } from "@/components/bits";
@@ -31,24 +32,25 @@ export default function MatchPage() {
       <header className="mt-6 panel overflow-hidden p-6 md:p-8">
         <div className="text-sm muted">{lg.name}{m.round ? `, round ${m.round}` : ""}</div>
         <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-          <TeamSide name={m.home} pos={pos(m.home)} form={form(m.home)} />
+          <TeamSide name={m.home} he={m.winner?.he[0]} pos={pos(m.home)} form={form(m.home)} />
           <div className="text-center">
             {m.status === "FT" ? <div className="display num text-4xl font-extrabold">{m.hs}–{m.as}</div> : (
               <><div className="display num text-2xl font-bold">{time(m.kickoff)}</div><div className="text-sm muted">{dayLabel(m.kickoff)}</div></>
             )}
             {m.venue && <div className="mt-1 text-xs text-ink-faint">{m.venue}</div>}
           </div>
-          <TeamSide name={m.away} pos={pos(m.away)} form={form(m.away)} right />
+          <TeamSide name={m.away} he={m.winner?.he[1]} pos={pos(m.away)} form={form(m.away)} right />
         </div>
         {m.model && (
           <div className="mt-8">
-            {isFootballModel(m.model) && <HeroBoxes m={m} p={[m.model["1x2"]["1"], m.model["1x2"].X, m.model["1x2"]["2"]]} sels={["1", "X", "2"]} market="1X2" lg={lg} />}
-            {isBasketModel(m.model) && <HeroBoxes m={m} p={[m.model.win["1"], m.model.win["2"]]} sels={["1", "2"]} market="Moneyline" lg={lg} />}
+            {isFootballModel(m.model) && <HeroBoxes m={m} p={m.winner?.p ?? [m.model["1x2"]["1"], m.model["1x2"].X, m.model["1x2"]["2"]]} sels={["1", "X", "2"]} market="1X2" lg={lg} />}
+            {isBasketModel(m.model) && <HeroBoxes m={m} p={m.winner?.p ?? [m.model.win["1"], m.model.win["2"]]} sels={["1", "2"]} market="Moneyline" lg={lg} />}
             <InPlainWords m={m} />
           </div>
         )}
       </header>
 
+      {m.winner && <WinnerBoard m={m} lg={lg} />}
       {m.model && isFootballModel(m.model) && <FootballMarkets m={m} lg={lg} />}
       {m.model && isBasketModel(m.model) && (
         <section className="mt-8 grid gap-4 md:grid-cols-3">
@@ -67,11 +69,12 @@ export default function MatchPage() {
   );
 }
 
-function TeamSide({ name, pos, form, right }: { name: string; pos: number | null; form: string[]; right?: boolean }) {
+function TeamSide({ name, he, pos, form, right }: { name: string; he?: string; pos: number | null; form: string[]; right?: boolean }) {
   return (
     <div className={`flex flex-col gap-2 ${right ? "items-end text-right" : ""}`}>
       <TeamMark name={name} size={44} />
       <div className="display text-lg font-bold md:text-2xl">{name}</div>
+      {he && <div dir="rtl" lang="he" className={`-mt-1.5 text-sm text-ink-muted ${right ? "text-right" : "text-left"}`}>{he}</div>}
       <div className="text-xs muted">{pos ? `${pos}${["th", "st", "nd", "rd"][pos % 10 > 3 || [11, 12, 13].includes(pos % 100) ? 0 : pos % 10]} in the table` : ""}</div>
       {form.length > 0 && <Form form={form} />}
     </div>
@@ -182,13 +185,15 @@ function HeroBoxes({ m, p, sels, market, lg }: { m: Match; p: number[]; sels: st
     <CouponBoxes
       p={p}
       size="lg"
+      odds={m.winner?.odds}
+      edges={m.winner?.edge}
       labels={sels.map((s) => (s === "1" ? `1 ${m.home}` : s === "2" ? `2 ${m.away}` : "X Draw"))}
       selected={mine ? sels.indexOf(mine.selection) : null}
       onPick={(i) => {
         const key = `${m.id}|${market}|${sels[i]}`;
         if (mine?.key === key) return removeLeg(key);
         addLeg({ key, matchId: m.id, league: lg.key, event: `${m.home} v ${m.away}`, kickoff: m.kickoff, market, selection: sels[i],
-          label: sels[i] === "1" ? m.home : sels[i] === "2" ? m.away : "Draw", modelP: p[i], odds: null });
+          label: sels[i] === "1" ? m.home : sels[i] === "2" ? m.away : "Draw", modelP: p[i], odds: m.winner?.odds?.[i] ?? null });
       }}
     />
   );
@@ -197,17 +202,91 @@ function HeroBoxes({ m, p, sels, market, lg }: { m: Match; p: number[]; sels: st
 // One or two sentences that say what the boxes mean for this game, for readers new to odds.
 function InPlainWords({ m }: { m: Match }) {
   if (!m.model) return null;
-  const opts: [string, number][] = isFootballModel(m.model)
-    ? [[`${m.home} to win`, m.model["1x2"]["1"]], ["a draw", m.model["1x2"].X], [`${m.away} to win`, m.model["1x2"]["2"]]]
-    : isBasketModel(m.model) ? [[`${m.home} to win`, m.model.win["1"]], [`${m.away} to win`, m.model.win["2"]]] : [];
-  if (!opts.length) return null;
-  const [name, p] = opts.reduce((a, b) => (b[1] > a[1] ? b : a));
-  const strength = p >= 0.65 ? "clear favourites" : p >= 0.5 ? "favourites" : "slight favourites in an open game";
+  const w = m.winner;
+  const names = isFootballModel(m.model) ? [`${m.home} to win`, "a draw", `${m.away} to win`] : [`${m.home} to win`, `${m.away} to win`];
+  const p = w?.p ?? (isFootballModel(m.model) ? [m.model["1x2"]["1"], m.model["1x2"].X, m.model["1x2"]["2"]] : isBasketModel(m.model) ? [m.model.win["1"], m.model.win["2"]] : []);
+  if (!p.length) return null;
+  const i = p.indexOf(Math.max(...p));
+  const odds = w?.odds?.[i];
+  const best = w?.best;
   return (
-    <p className="mt-5 rounded border border-line bg-well px-4 py-3 text-sm leading-relaxed">
-      <span className="font-semibold">In plain words: </span>
-      we make it {pct(p)} for {name}{name.endsWith("to win") ? `, so they're ${strength}` : ""}. A fair price for that is {fair(p)}: if Winner offers more than {fair(p)}, it's a good-value bet;
-      if it offers less, it isn't. Tap a box to add it to your ticket.
-    </p>
+    <div className="mt-5 space-y-1.5 rounded border border-line bg-well px-4 py-3 text-sm leading-relaxed">
+      <p>
+        <span className="font-semibold">In plain words: </span>
+        we make it {pct(p[i])} for {names[i]}, so the fair price is {fair(p[i])}.{" "}
+        {odds
+          ? odds >= 1 / p[i] * (1 + VALUE_EDGE)
+            ? <>Winner pays <b>{odds.toFixed(2)}</b>, more than it should: <span className="font-semibold text-won">that's value</span>.</>
+            : <>Winner pays <b>{odds.toFixed(2)}</b>, {odds < 1 / p[i] ? "less than that, so it's not value" : "about the fair price, so there's no real edge"}.</>
+          : <>If Winner offers more than {fair(p[i])}, it's a good-value bet; if less, it isn't.</>}
+      </p>
+      {best && best.edge >= VALUE_EDGE && (best.market !== (isFootballModel(m.model) ? "1X2" : "Winner") || best.sel !== ["1", "X", "2"][i]) && (
+        <p>
+          <span className="font-semibold text-won">Best value on this game: </span>
+          {best.label}{best.market === "1X2" || best.market === "Winner" ? " to win" : ""} at {best.odds.toFixed(2)}. We make it {pct(best.p)}; Winner's price implies {pct(1 / best.odds)}.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// Every Winner market on this game: Winner's odds next to our chance and fair price.
+function WinnerBoard({ m, lg }: { m: Match; lg: League }) {
+  const w = m.winner!;
+  const { addLeg, hasLeg, removeLeg } = useApp();
+  const title = (x: WinnerMarket) => x.market === "1X2" ? "Result (1X2)" : x.market === "Winner" ? "Winner (incl. overtime)"
+    : x.market === "Handicap" ? `Handicap ${x.line! > 0 ? "+" : ""}${x.line} for ${m.home}` : x.market === "Goals" ? `Total goals, ${x.line}` : `Total points, ${x.line}`;
+  return (
+    <section className="mt-8 panel overflow-hidden">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-line px-5 py-4">
+        <div>
+          <h2 className="font-semibold">Winner's odds vs our price</h2>
+          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-ink-muted">
+            The odds on Winner right now, next to our chance and the fair price. Green means Winner pays more than the fair price, by {pct(VALUE_EDGE)} or more.
+            Winner keeps a margin of about {pct(w.margin)} on this game, which is why most prices aren't value.
+          </p>
+        </div>
+        <span className="text-xs text-ink-faint">Winner odds updated {ago(w.fetchedAt)}</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[560px] text-sm">
+          <thead className="text-xs text-ink-muted">
+            <tr className="border-b border-line">
+              <th className="px-5 py-2.5 text-left font-semibold">Bet</th>
+              <th className="px-3 py-2.5 text-right font-semibold">Winner pays</th>
+              <th className="px-3 py-2.5 text-right font-semibold">Our chance</th>
+              <th className="px-3 py-2.5 text-right font-semibold">Fair price</th>
+              <th className="px-3 py-2.5 text-right font-semibold">Value</th>
+              <th className="px-5 py-2.5" />
+            </tr>
+          </thead>
+          {w.markets.map((x) => (
+            <tbody key={x.market + x.line} className="border-b border-line last:border-0">
+              <tr><td colSpan={6} className="bg-paper/60 px-5 pb-1 pt-3 text-xs font-semibold uppercase tracking-wider text-ink-faint">{title(x)}</td></tr>
+              {x.sels.map((sel, i) => {
+                const key = `${m.id}|W${x.market}${x.line ?? ""}|${sel}`;
+                const on = hasLeg(key);
+                const value = x.edge[i] >= VALUE_EDGE;
+                return (
+                  <tr key={sel} className={value ? "bg-won/5" : ""}>
+                    <td className="px-5 py-2.5">{x.labels[i]}</td>
+                    <td className="num px-3 py-2.5 text-right font-semibold">{x.odds[i].toFixed(2)}</td>
+                    <td className="num px-3 py-2.5 text-right text-ink-muted">{pct(x.p[i])}</td>
+                    <td className="num px-3 py-2.5 text-right text-ink-muted">{fair(x.p[i])}</td>
+                    <td className={`num px-3 py-2.5 text-right ${value ? "font-bold text-won" : "text-ink-faint"}`}>{signedPct(x.edge[i])}</td>
+                    <td className="px-5 py-2 text-right">
+                      <button className={`chip ${on ? "chip-on" : ""}`} aria-pressed={on}
+                        onClick={() => on ? removeLeg(key) : addLeg({ key, matchId: m.id, league: lg.key, event: `${m.home} v ${m.away}`, kickoff: m.kickoff, market: x.market, selection: sel, label: x.labels[i], modelP: x.p[i], odds: x.odds[i] })}>
+                        {on ? <Check size={12} /> : <Plus size={12} />} Ticket
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          ))}
+        </table>
+      </div>
+    </section>
   );
 }

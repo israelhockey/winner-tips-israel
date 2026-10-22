@@ -8,11 +8,14 @@
 //   and shrinkage towards the league average so promoted teams start sensibly.
 // Football (UEFA cups): one Elo rating across every league we cover, turned into expected goals.
 // Basketball: Elo with margin of victory, carried between seasons with 25% regression.
+// Winner: where Winner prices a game, our shown chance blends the model (35%) with Winner's own
+//   prices once its margin is taken out (60%), and every Winner market gets a value edge.
 //
 // Run with `npm run data:model` after `npm run data:fetch`.
 
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { LEAGUES } from "./leagues.mjs";
+import { matchEvents } from "./winner-match.mjs";
 
 const RAW = new URL("../data/raw/", import.meta.url);
 const OUT = new URL("../public/data/", import.meta.url);
@@ -321,6 +324,99 @@ function buildRecord(picks, matchById) {
   };
 }
 
+
+// ---------------------------------------------------------------------------------------------
+// Winner odds: blend and value
+// ---------------------------------------------------------------------------------------------
+
+const MODEL_WEIGHT = 0.35; // the rest goes to Winner's margin-free prices, which know about team news
+const VALUE_EDGE = 0.05;
+
+// Normal CDF (Abramowitz-Stegun), for basketball margins and totals.
+function Phi(x) {
+  const t = 1 / (1 + 0.2316419 * Math.abs(x));
+  const d = 0.3989423 * Math.exp(-x * x / 2);
+  const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+  return x > 0 ? 1 - p : p;
+}
+const fairOf = (odds) => { const inv = odds.map((o) => 1 / o); const s = inv.reduce((a, b) => a + b, 0); return inv.map((x) => x / s); };
+const signed = (x) => (x > 0 ? `+${x}` : `${x}`);
+
+function winnerMarkets(m, ev, sport, sd) {
+  const out = [];
+  const add = (market, line, sels, labels, modelP, odds) => {
+    if (!odds || odds.length !== modelP.length || odds.some((o) => !(o > 1))) return;
+    const fair = fairOf(odds);
+    const p = modelP.map((x, i) => MODEL_WEIGHT * x + (1 - MODEL_WEIGHT) * fair[i]);
+    out.push({
+      market, line, sels, labels, odds,
+      p: p.map((x) => round(x)), model: modelP.map((x) => round(x)), fair: fair.map((x) => round(x)),
+      edge: p.map((x, i) => round(x * odds[i] - 1)),
+      margin: round(odds.reduce((a, o) => a + 1 / o, 0) - 1),
+    });
+  };
+  const o = ev.odds;
+  if (sport === "football") {
+    const M = scoreMatrix(...m.model.xg);
+    const sum = (f) => { let s = 0; for (let i = 0; i < M.length; i++) for (let j = 0; j < M.length; j++) if (f(i, j)) s += M[i][j]; return s; };
+    const x = m.model["1x2"];
+    add("1X2", null, ["1", "X", "2"], [m.home, "Draw", m.away], [x["1"], x.X, x["2"]], o["1x2"]);
+    if (o.hcap?.line != null) {
+      const k = o.hcap.line;
+      add("Handicap", k, ["1", "X", "2"], [`${m.home} ${signed(k)}`, `Draw (${m.home} ${signed(k)})`, `${m.away} ${signed(-k)}`],
+        [sum((i, j) => i + k > j), sum((i, j) => i + k === j), sum((i, j) => i + k < j)], o.hcap.odds);
+    }
+    if (o.total?.line) {
+      const over = sum((i, j) => i + j > o.total.line);
+      add("Goals", o.total.line, ["Over", "Under"], [`Over ${o.total.line} goals`, `Under ${o.total.line} goals`], [over, 1 - over], [o.total.over, o.total.under]);
+    }
+  } else {
+    const mu0 = m.model.spread;
+    add("Winner", null, ["1", "2"], [m.home, m.away], [m.model.win["1"], m.model.win["2"]], o.ml);
+    if (o.spread?.line != null) {
+      const p1 = Phi((mu0 + o.spread.line) / sd);
+      add("Handicap", o.spread.line, ["1", "2"], [`${m.home} ${signed(o.spread.line)}`, `${m.away} ${signed(-o.spread.line)}`], [p1, 1 - p1], o.spread.odds);
+    }
+    if (o.hcap?.line != null) { // Israeli league: three-way, no overtime
+      const mu = mu0 + o.hcap.line;
+      const p1 = 1 - Phi((0.5 - mu) / sd), p2 = Phi((-0.5 - mu) / sd);
+      add("Handicap", o.hcap.line, ["1", "X", "2"], [`${m.home} ${signed(o.hcap.line)}`, "Draw (handicap)", `${m.away} ${signed(-o.hcap.line)}`], [p1, 1 - p1 - p2, p2], o.hcap.odds);
+    }
+    if (o.total?.line && m.model.total) {
+      const over = 1 - Phi((o.total.line - m.model.total) / (sd * 1.45));
+      add("Points", o.total.line, ["Over", "Under"], [`Over ${o.total.line} points`, `Under ${o.total.line} points`], [over, 1 - over], [o.total.over, o.total.under]);
+    }
+  }
+  return out;
+}
+
+// Attach Winner's prices to a fixture. The coupon boxes then show the blended chance and
+// Winner's odds; basketball games Winner only offers on a handicap get a blended win chance
+// from that line.
+function withWinner(m, sport) {
+  const ev = winnerById.get(m.id);
+  if (!ev || !m.model) return m;
+  const sd = m.model.sd ?? 12;
+  const markets = winnerMarkets(m, ev, sport, sd);
+  if (!markets.length) return m;
+  let main = markets.find((x) => x.market === "1X2" || x.market === "Winner");
+  let p = main?.p ?? null, odds = main?.odds ?? null;
+  if (!main && sport === "basketball") {
+    const h = markets.find((x) => x.market === "Handicap");
+    if (h) {
+      const mkt = Phi(-h.line / sd); // the market's line, read as a win chance
+      const w = MODEL_WEIGHT * m.model.win["1"] + (1 - MODEL_WEIGHT) * mkt;
+      p = [round(w), round(1 - w)];
+    }
+  }
+  const best = markets.flatMap((x) => x.edge.map((e, i) => ({ market: x.market, line: x.line, sel: x.sels[i], label: x.labels[i], odds: x.odds[i], p: x.p[i], edge: e })))
+    .sort((a, b) => b.edge - a.edge)[0];
+  return {
+    ...m,
+    winner: { he: [ev.home, ev.away], fetchedAt: winnerRaw.fetchedAt, p, odds, edge: main ? main.edge : null, margin: main?.margin ?? markets[0].margin, markets, best },
+  };
+}
+
 // ---------------------------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------------------------
@@ -335,6 +431,32 @@ const footballAll = LEAGUES.filter((l) => l.sport === "football" && raw[l.key])
   .flatMap((l) => raw[l.key].matches.map((m) => ({ ...m, league: l })))
   .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
 const elo = runEloFootball(footballAll);
+
+// Winner's line, matched to our fixtures. Names we've matched before are remembered in
+// data/raw/winner-aliases.json; content/winner-names.json holds any we set by hand.
+const ALIASES = new URL("winner-aliases.json", RAW);
+const winnerRaw = await load(new URL("winner.json", RAW));
+const winnerById = new Map();
+if (winnerRaw?.events?.length) {
+  const learnedBefore = (await load(ALIASES)) || {};
+  const manual = (await load(new URL("../content/winner-names.json", import.meta.url))) || {};
+  const aliases = {};
+  for (const src of [learnedBefore, manual]) for (const [lg, map] of Object.entries(src)) aliases[lg] = { ...aliases[lg], ...map };
+  const fixturesByLeague = {};
+  for (const lg of LEAGUES) {
+    const d = raw[lg.key];
+    if (!d?.matches) continue;
+    fixturesByLeague[lg.key] = d.matches
+      .filter((m) => m.status === "NS" && Date.parse(m.kickoff) > NOW - 3 * 3600e3 && Date.parse(m.kickoff) < NOW + 21 * DAY)
+      .map((m) => ({ id: m.id, home: cleanName(m.home), away: cleanName(m.away), kickoff: m.kickoff }));
+  }
+  const { matched, learned } = matchEvents(winnerRaw.events, fixturesByLeague, aliases);
+  for (const x of matched) winnerById.set(x.match.id, x.event);
+  const merged = { ...learnedBefore };
+  for (const [lg, map] of Object.entries(learned)) merged[lg] = { ...merged[lg], ...map };
+  await writeFile(ALIASES, JSON.stringify(merged, null, 1));
+  console.log(`Winner: matched ${matched.length} of ${winnerRaw.events.length} games, odds from ${winnerRaw.fetchedAt}`);
+}
 
 const index = { updatedAt: new Date().toISOString(), leagues: [], upcoming: [] };
 const matchById = new Map();
@@ -372,7 +494,7 @@ for (const lg of LEAGUES) {
 
   const upcoming = matches
     .filter((m) => m.status === "NS" && Date.parse(m.kickoff) > NOW - 3 * 3600e3 && Date.parse(m.kickoff) < NOW + 21 * DAY)
-    .map((m) => ({ ...m, model: predict ? predict(m) : null }));
+    .map((m) => withWinner({ ...m, model: predict ? predict(m) : null }, lg.sport));
   const results = matches.filter((m) => m.status === "FT").map((m) => [m.id, m.kickoff, m.home, m.away, m.hs, m.as, m.season, m.round]);
 
   const out = {
@@ -397,6 +519,7 @@ for (const lg of LEAGUES) {
   console.log(`${lg.name.padEnd(26)} ${String(currentMatches.length).padStart(4)} this season, ${String(upcoming.length).padStart(3)} upcoming${check ? `, check: ${check.matches} games, hit ${(check.hitRate * 100).toFixed(0)}%, Brier ${check.brier} vs ${check.baselineBrier}` : ""}`);
 }
 index.upcoming.sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+index.winner = winnerRaw ? { fetchedAt: winnerRaw.fetchedAt, games: index.upcoming.filter((m) => m.winner).length, valueEdge: VALUE_EDGE } : null;
 
 // Picks ledger
 const picks = (await load(PICKS)) || [];

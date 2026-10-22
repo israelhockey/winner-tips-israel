@@ -1,46 +1,52 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { Check, Plus } from "lucide-react";
 import { useIndex } from "@/lib/data";
-import { dayLabel, time, fair, pct, edge, signedPct } from "@/lib/format";
-import { isBasketModel, isFootballModel, type Match } from "@/lib/types";
+import { dayLabel, time, fair, pct, signedPct, ago } from "@/lib/format";
+import { VALUE_EDGE } from "@/lib/config";
+import { useApp } from "@/lib/state";
 import { Loading } from "@/components/bits";
+import type { Match } from "@/lib/types";
 
-// Type the Winner odds you see on the coupon; we show where they pay more than our model says
-// they should. Winner's prices aren't in any free feed, so the reader brings them.
-const KEY = "lu.winnerOdds";
-type OddsMap = Record<string, string>; // `${matchId}|${sel}` -> typed odds
-const THRESHOLD = 0.05;
+// Every bet Winner offers on the games we cover, checked against our numbers and sorted by value.
+interface Row { m: Match; market: string; line: number | null; sel: string; label: string; odds: number; p: number; edge: number }
 
 export default function Value() {
   const { data: index } = useIndex();
+  const { addLeg, hasLeg, removeLeg } = useApp();
   const [league, setLeague] = useState("all");
-  const [odds, setOdds] = useState<OddsMap>(() => { try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch { return {}; } });
-  useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify(odds)); } catch { /* ignore */ } }, [odds]);
+  const [onlyValue, setOnlyValue] = useState(true);
 
-  const matches = useMemo(() => (index?.upcoming ?? []).filter((m) => m.model && (league === "all" || m.league === league)), [index, league]);
-  const flags = useMemo(() => {
-    const out: { m: Match; sel: string; p: number; o: number; e: number }[] = [];
+  const rows = useMemo(() => {
+    const out: Row[] = [];
     for (const m of index?.upcoming ?? []) {
-      for (const [sel, p] of outcomes(m)) {
-        const o = Number(odds[`${m.id}|${sel}`]);
-        if (o > 1 && edge(p, o) >= THRESHOLD) out.push({ m, sel, p, o, e: edge(p, o) });
-      }
+      if (!m.winner || Date.parse(m.kickoff) < Date.now()) continue;
+      for (const x of m.winner.markets) x.sels.forEach((sel, i) => out.push({ m, market: x.market, line: x.line, sel, label: x.labels[i], odds: x.odds[i], p: x.p[i], edge: x.edge[i] }));
     }
-    return out.sort((a, b) => b.e - a.e);
-  }, [index, odds]);
+    return out.sort((a, b) => b.edge - a.edge);
+  }, [index]);
+
+  const leagues = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const r of rows) seen.set(r.m.league!, r.m.leagueName!);
+    return [...seen];
+  }, [rows]);
+  const inLeague = rows.filter((r) => league === "all" || r.m.league === league);
+  const value = inLeague.filter((r) => r.edge >= VALUE_EDGE);
+  const shown = onlyValue ? (value.length ? value : inLeague.slice(0, 10)) : inLeague.slice(0, 150);
 
   return (
     <>
       <h1 className="h1">Value finder</h1>
       <p className="mt-3 max-w-2xl muted">
-        Find the bets where Winner is paying more than it should. Winner doesn't publish its odds in a feed we can read, so you copy them in from the coupon. Your odds stay on this device.
+        Every bet on Winner for the games we cover, checked against our numbers. When Winner pays more than a bet is worth, it shows here in green. Nothing to type in.
       </p>
 
       <ol className="mt-6 grid gap-px overflow-hidden rounded-card border border-line bg-line md:grid-cols-3">
         {[
-          ["Open the Winner coupon", "On the Winner app or a printed coupon, find a game listed below."],
-          ["Type in Winner's odds", "Put Winner's number for 1, X or 2 in the matching box under the game. Next to it you'll see our fair odds."],
-          ["Look for green", "If Winner pays at least 5% more than our fair odds, the box turns green and the bet appears under Value on your coupon."],
+          ["We read Winner's odds", `Straight from Winner's public coupon, every three hours${index?.winner ? `. Last update ${ago(index.winner.fetchedAt)}` : ""}.`],
+          ["We price every bet", "Our model, blended with Winner's own prices once its margin is taken out, gives each result a fair chance."],
+          ["Green means value", `If Winner pays at least ${pct(VALUE_EDGE)} more than the fair price, it's value. Over many bets, value is what wins.`],
         ].map(([t, d], i) => (
           <li key={t} className="bg-card p-5">
             <div className="flex items-baseline gap-2.5">
@@ -52,82 +58,83 @@ export default function Value() {
         ))}
       </ol>
       <p className="mt-3 max-w-3xl text-sm leading-relaxed text-ink-muted">
-        <span className="font-semibold text-ink">Example:</span> we give Maccabi a 50% chance, so our fair odds are 2.00. Winner offers 2.20.
-        That's 10% more than fair, shown as <span className="num font-semibold text-accent">+10%</span>: a value bet. If Winner offered 1.80, you'd see <span className="num">−10%</span>: skip it.
-        Value doesn't mean a bet will win. It means that over many bets like it, you'd expect to come out ahead.
+        <span className="font-semibold text-ink">Example:</span> we make a result 50%, so its fair price is 2.00. Winner pays 2.20: that's 10% more than fair, shown as{" "}
+        <span className="num font-semibold text-won">+10%</span>. Value isn't a guarantee: our model can't see injuries or team news, so check the line-ups before you play,
+        and remember odds on Winner move.
       </p>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_340px] lg:items-start">
-        <div>
-          <div className="mb-4 flex flex-wrap gap-2">
+      {!index ? <Loading what="Winner's odds" /> : !index.winner ? (
+        <p className="mt-8 panel p-6 muted">Winner's odds aren't loaded yet. They arrive with the next data update, within three hours.</p>
+      ) : (
+        <>
+          <div className="mt-8 flex flex-wrap items-center gap-2">
             <button className={`chip ${league === "all" ? "chip-on" : ""}`} onClick={() => setLeague("all")}>All leagues</button>
-            {index?.leagues.filter((l) => l.upcoming).map((l) => (
-              <button key={l.key} className={`chip ${league === l.key ? "chip-on" : ""}`} onClick={() => setLeague(l.key)}>{l.name}</button>
-            ))}
+            {leagues.map(([k, n]) => <button key={k} className={`chip ${league === k ? "chip-on" : ""}`} onClick={() => setLeague(k)}>{n}</button>)}
           </div>
-          {!index ? <Loading what="fixtures" /> : (
-            <div className="panel divide-y divide-line">
-              {matches.length === 0 && <p className="p-6 muted">No priced games in the next eight days for this league.</p>}
-              {matches.map((m) => (
-                <div key={m.id} className="grid gap-3 px-4 py-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-                  <div className="min-w-0">
-                    <div className="text-xs text-ink-faint">{m.leagueName}, {dayLabel(m.kickoff)} {time(m.kickoff)}</div>
-                    <Link to={`/match/${m.league}/${m.id}`} className="font-semibold hover:text-accent">{m.home} v {m.away}</Link>
-                  </div>
-                  <div className="flex gap-2">
-                    {outcomes(m).map(([sel, p]) => {
-                      const k = `${m.id}|${sel}`;
-                      const o = Number(odds[k]);
-                      const e = o > 1 ? edge(p, o) : null;
-                      return (
-                        <label key={sel} className="flex w-[5.5rem] flex-col gap-1 text-xs">
-                          <span className="flex justify-between muted"><span className="font-bold text-ink">{sel}</span><span className="num">fair {fair(p)}</span></span>
-                          <input
-                            inputMode="decimal"
-                            placeholder="Winner"
-                            value={odds[k] ?? ""}
-                            onChange={(ev) => setOdds((x) => ({ ...x, [k]: ev.target.value.replace(",", ".") }))}
-                            className={`num w-full rounded-lg border bg-well px-2 py-1.5 text-sm outline-none focus:border-accent ${e !== null && e >= THRESHOLD ? "border-accent text-accent" : "border-line"}`}
-                            aria-label={`Winner odds for ${sel === "1" ? m.home : sel === "2" ? m.away : "draw"}`}
-                          />
-                          <span className={`num h-4 ${e === null ? "" : e >= THRESHOLD ? "text-accent font-semibold" : e >= 0 ? "muted" : "text-ink-faint"}`}>
-                            {e === null ? "" : signedPct(e)}
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="inline-flex rounded border border-line bg-card p-0.5 text-sm" role="tablist">
+              <button role="tab" aria-selected={onlyValue} onClick={() => setOnlyValue(true)} className={`rounded-sm px-3 py-1.5 font-semibold ${onlyValue ? "bg-ink text-paper" : "text-ink-muted hover:text-ink"}`}>Value bets ({value.length})</button>
+              <button role="tab" aria-selected={!onlyValue} onClick={() => setOnlyValue(false)} className={`rounded-sm px-3 py-1.5 font-semibold ${!onlyValue ? "bg-ink text-paper" : "text-ink-muted hover:text-ink"}`}>Every bet</button>
             </div>
-          )}
-        </div>
+            <span className="text-xs text-ink-faint">{index.winner.games} games priced by Winner</span>
+          </div>
 
-        <aside className="panel p-5 lg:sticky lg:top-32">
-          <h2 className="h3">Value on your coupon</h2>
-          {flags.length === 0 ? (
-            <p className="mt-2 text-sm muted">Nothing yet. A result shows here when Winner's odds beat our fair price by {pct(THRESHOLD)} or more.</p>
-          ) : (
-            <ul className="mt-3 divide-y divide-line">
-              {flags.map((f) => (
-                <li key={`${f.m.id}${f.sel}`} className="py-3 text-sm">
-                  <div className="font-semibold">{f.sel === "1" ? f.m.home : f.sel === "2" ? f.m.away : "Draw"} <span className="text-ink-faint font-normal">in {f.m.home} v {f.m.away}</span></div>
-                  <div className="num mt-0.5 muted">Winner {f.o.toFixed(2)}, fair {fair(f.p)}, <span className="font-semibold text-accent">{signedPct(f.e)} value</span></div>
-                </li>
-              ))}
-            </ul>
+          {onlyValue && !value.length && (
+            <p className="mt-4 rounded border border-line bg-well px-4 py-3 text-sm">
+              No bet clears the {pct(VALUE_EDGE)} bar right now. That's normal: Winner's margin is about 10%, so value is rare. These are the closest:
+            </p>
           )}
-          <p className="mt-4 border-t border-line pt-4 text-xs text-ink-faint">
-            Value is the model's opinion, not a promise. Small edges on long odds lose often in the short run. Stake small and the same each time.
+
+          <div className="mt-4 panel overflow-x-auto">
+            <table className="w-full min-w-[720px] text-sm">
+              <thead className="text-xs text-ink-muted">
+                <tr className="border-b border-line">
+                  <th className="px-4 py-3 text-left font-semibold">Game</th>
+                  <th className="px-3 py-3 text-left font-semibold">Bet</th>
+                  <th className="px-3 py-3 text-right font-semibold">Winner pays</th>
+                  <th className="px-3 py-3 text-right font-semibold">Our chance</th>
+                  <th className="px-3 py-3 text-right font-semibold">Fair price</th>
+                  <th className="px-3 py-3 text-right font-semibold">Value</th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {shown.map((r) => {
+                  const key = `${r.m.id}|W${r.market}${r.line ?? ""}|${r.sel}`;
+                  const on = hasLeg(key);
+                  const good = r.edge >= VALUE_EDGE;
+                  return (
+                    <tr key={key} className={good ? "bg-won/5" : ""}>
+                      <td className="px-4 py-3">
+                        <div className="text-xs text-ink-faint">{r.m.leagueName}, {dayLabel(r.m.kickoff)} {time(r.m.kickoff)}</div>
+                        <Link to={`/match/${r.m.league}/${r.m.id}`} className="font-semibold hover:text-accent">{r.m.home} v {r.m.away}</Link>
+                        <div dir="rtl" lang="he" className="text-left text-xs text-ink-faint">{r.m.winner!.he[0]} – {r.m.winner!.he[1]}</div>
+                      </td>
+                      <td className="px-3 py-3">
+                        <div>{r.label}{r.market === "1X2" || r.market === "Winner" ? (r.sel === "X" ? "" : " to win") : ""}</div>
+                        <div className="text-xs text-ink-faint">{r.market === "1X2" ? "Result" : r.market === "Goals" ? "Total goals" : r.market === "Points" ? "Total points" : r.market}</div>
+                      </td>
+                      <td className="num px-3 py-3 text-right text-base font-semibold">{r.odds.toFixed(2)}</td>
+                      <td className="num px-3 py-3 text-right text-ink-muted">{pct(r.p)}</td>
+                      <td className="num px-3 py-3 text-right text-ink-muted">{fair(r.p)}</td>
+                      <td className={`num px-3 py-3 text-right ${good ? "font-bold text-won" : "text-ink-faint"}`}>{signedPct(r.edge)}</td>
+                      <td className="px-4 py-3 text-right">
+                        <button className={`chip ${on ? "chip-on" : ""}`} aria-pressed={on}
+                          onClick={() => on ? removeLeg(key) : addLeg({ key, matchId: r.m.id, league: r.m.league!, event: `${r.m.home} v ${r.m.away}`, kickoff: r.m.kickoff, market: r.market, selection: r.sel, label: r.label, modelP: r.p, odds: r.odds })}>
+                          {on ? <Check size={12} /> : <Plus size={12} />} Ticket
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-4 max-w-3xl text-xs leading-relaxed text-ink-faint">
+            Odds are copied from Winner's public site and can change at any time; always check the price on Winner before you play. We're not affiliated with Winner or the Israel Sports Betting Board.
           </p>
-        </aside>
-      </div>
+        </>
+      )}
     </>
   );
-}
-
-function outcomes(m: Match): [string, number][] {
-  if (isFootballModel(m.model)) return [["1", m.model["1x2"]["1"]], ["X", m.model["1x2"].X], ["2", m.model["1x2"]["2"]]];
-  if (isBasketModel(m.model)) return [["1", m.model.win["1"]], ["2", m.model.win["2"]]];
-  return [];
 }

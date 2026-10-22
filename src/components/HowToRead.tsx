@@ -29,9 +29,9 @@ export function HowToRead({ className = "" }: { className?: string }) {
           <div>
             <div className="text-xs font-semibold uppercase tracking-wider text-ink-faint">Example: Maccabi v Hapoel</div>
             <div className="mt-3 grid grid-cols-3 gap-1.5">
-              <ExampleBox label="1" odds="1.64" p={61} fav />
-              <ExampleBox label="X" odds="4.35" p={23} />
-              <ExampleBox label="2" odds="6.25" p={16} />
+              <ExampleBox label="1" odds="1.55" p={61} fav />
+              <ExampleBox label="X" odds="3.90" p={23} />
+              <ExampleBox label="2" odds="5.40" p={16} />
             </div>
             <div className="mt-2 grid grid-cols-3 gap-1.5 text-center text-xs text-ink-muted">
               <span>Home team wins</span><span>Draw</span><span>Away team wins</span>
@@ -41,10 +41,12 @@ export function HowToRead({ className = "" }: { className?: string }) {
           <dl className="grid gap-x-8 gap-y-4 text-sm sm:grid-cols-2">
             <Item term="1 · X · 2">The three possible results, the same as on the Winner coupon. 1 is a home win, X is a draw, 2 is an away win.</Item>
             <Item term="The big number (61%)">How likely we think that result is. 61% means: play this game 100 times and the home team wins about 61.</Item>
-            <Item term="The small number (1.64)">The fair odds for that result. If Winner pays more than this, the bet is good value. If it pays less, it isn't.</Item>
+            <Item term="W 1.64, the small number">What Winner pays right now. Where Winner hasn't priced a game yet, you'll see our fair odds instead, without the W.</Item>
+            <Item term={<span className="rounded-sm bg-won px-1 text-white">Value</span>}>Winner pays more than the result is worth, by 5% or more. That's the kind of bet that wins over time.</Item>
             <Item term={<span className="marked">Yellow box</span>}>The result our model thinks is most likely. Most likely doesn't mean certain: favourites lose often.</Item>
             <Item term="Expected goals">How many goals we expect each team to score, on average. 2.0–1.6 points to an open game; 0.9–0.8 to a tight one.</Item>
-            <Item term="Tap a box">Adds that result to your ticket, a list you can check against Winner's odds before you play.</Item>
+            <Item term="The Hebrew line">The teams exactly as Winner writes them, so you can find the game in the Winner app.</Item>
+            <Item term="Tap a box">Adds that result to your ticket, a shortlist with Winner's odds you can take to the app.</Item>
           </dl>
 
           <p className="text-sm text-ink-muted lg:col-span-2">
@@ -61,7 +63,7 @@ function ExampleBox({ label, odds, p, fav }: { label: string; odds: string; p: n
     <div className={`flex h-16 flex-col justify-between rounded border px-2.5 py-1.5 ${fav ? "border-marker-deep bg-marker" : "border-line bg-card"}`}>
       <span className="flex items-baseline justify-between">
         <span className="font-display text-sm font-extrabold">{label}</span>
-        <span className="num text-[11px] text-ink-muted">{odds}</span>
+        <span className="num text-[11px] font-semibold"><span className="mr-0.5 text-[9px] font-bold text-ink-faint">W</span>{odds}</span>
       </span>
       <span className="num font-display text-xl font-bold leading-none">{p}<span className="text-[0.55em]">%</span></span>
     </div>

@@ -10,7 +10,7 @@ const SECTIONS: { id: string; title: string; intro?: string; items: [string, Rea
       ["What odds mean", <>Winner shows odds as a single number, like <b>2.50</b>. Multiply your stake by it to get your total return if you win. 100 NIS at 2.50 returns 250 NIS: your 100 back plus 150 profit.</>],
       ["Odds are a chance in disguise", <>Divide 1 by the odds to get the chance they imply. 2.50 means 1 ÷ 2.50 = 40%. Low odds (1.30) mean a strong favourite; high odds (6.00) mean an outsider.</>],
       ["Fair odds", <>Our fair odds are the price with no bookmaker margin: exactly 1 ÷ our chance. If we give a result 40%, its fair odds are 2.50.</>],
-      ["The margin", <>Winner, like every bookmaker, pays a little less than fair odds on most results. That gap is how it makes money, and it's why most bets lose over time.</>],
+      ["The margin", <>Winner, like every bookmaker, pays less than fair odds. Add up the chances behind its three odds on a game and you get about 110%, not 100%: that extra 10% is Winner's margin, and it's why most bets lose over time.</>],
       ["Value", <>A bet has value when Winner pays <i>more</i> than our fair odds. Fair 2.50 and Winner offers 2.80? That's value. Winner offers 2.20? Skip it. Picking only value bets is the one way to beat the margin over many bets, though any single bet can still lose.</>],
     ],
   },
@@ -40,7 +40,8 @@ const SECTIONS: { id: string; title: string; intro?: string; items: [string, Rea
     id: "numbers",
     title: "Our numbers",
     items: [
-      ["The percentage", <>How often we think a result happens. Our model looks at every team's recent goals scored and conceded, home advantage and opponent strength. It doesn't know about injuries or team news, which is where our tipsters come in.</>],
+      ["The percentage", <>How often we think a result happens. Our model looks at every team's recent goals scored and conceded, home advantage and opponent strength. Where Winner prices the game, we blend the model (35%) with Winner's own prices once the margin is taken out (65%), because those know about injuries and team news.</>],
+      ["W 1.64", <>Winner's odds for that result, read from Winner's public coupon every three hours. Odds move, so always check the app before you play.</>],
       ["Expected goals", <>The average goals we expect each team to score in this game. Shown as home–away, for example 1.8–0.9.</>],
       ["Form (W D L)", <>Each team's last five results in this competition, oldest on the left: <span className="font-semibold text-won">W</span> win, <span className="font-semibold text-draw">D</span> draw, <span className="font-semibold text-lost">L</span> loss.</>],
       ["Yellow box", <>The result we think is most likely. "Most likely" is not "certain": a 45% favourite still fails more often than it succeeds.</>],
@@ -52,7 +53,7 @@ const SECTIONS: { id: string; title: string; intro?: string; items: [string, Rea
     title: "Using the site",
     items: [
       ["Ticket", <>Tap any box or market to add it to your ticket. It's a shortlist on this device for comparing with Winner before you play. We don't take bets.</>],
-      ["Value finder", <>Type in the odds you see on Winner. We compare them with our fair odds and highlight the ones that pay more than they should.</>],
+      ["Value finder", <>Every bet Winner offers on our games, compared with our fair price and sorted by value. Green means Winner pays more than the bet is worth.</>],
       ["Picks", <>Our tipsters' selections, each posted before kickoff with Winner's odds at that moment.</>],
       ["The record", <>Every pick we've published, won or lost, graded automatically from the final score. Nothing is deleted, so you can judge us on all of it.</>],
     ],
