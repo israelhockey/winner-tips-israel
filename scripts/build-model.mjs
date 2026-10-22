@@ -24,7 +24,7 @@ const load = async (url) => { try { return JSON.parse(await readFile(url, "utf8"
 const round = (x, d = 3) => Math.round(x * 10 ** d) / 10 ** d;
 
 // Display names: openfootball writes "Arsenal FC", TheSportsDB "Arsenal".
-export const cleanName = (s) => s.replace(/\s+(FC|AFC|CF|SC|F\.C\.)$/i, "").replace(/^(FC|AFC)\s+/i, "").trim();
+export const cleanName = (s) => s.replace(/\s+(FC|AFC|CF|SC|BC|F\.C\.|B\.C\.)$/i, "").replace(/^(FC|AFC)\s+/i, "").trim();
 const normName = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
   .replace(/\b(fc|afc|cf|sc|ac|ssc|sv|vfb|vfl|tsg|bv|fk|cd|ud|rc|rcd|sd|ca|as|ogc|club|calcio|bc|b c)\b/g, " ")
   .replace(/[^a-z0-9]+/g, " ").trim();
