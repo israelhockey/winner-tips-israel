@@ -95,6 +95,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <Link className="block hover:text-white" to="/guide">Beginner's guide</Link>
             <Link className="block hover:text-white" to="/how-it-works">How the model works</Link>
             <Link className="block hover:text-white" to="/record">The full record</Link>
+            <Link className="block hover:text-white" to="/verify">Verify our picks</Link>
             <Link className="block hover:text-white" to="/responsible-gambling">Responsible gambling</Link>
           </div>
           <div className="space-y-2.5">

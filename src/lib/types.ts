@@ -86,6 +86,8 @@ export interface RecordSummary {
   roi: number;
   avgOdds: number;
   beatClosing: number | null;
+  avgClv: number | null;
+  clvPicks: number;
   last10: ("W" | "L")[];
 }
 
@@ -146,6 +148,12 @@ export interface Pick {
   line?: number;
   odds: number;
   closingOdds?: number;
+  closingSeenAt?: string;
+  label?: string;
+  p?: number;              // model picks: our chance when locked
+  edge?: number;           // model picks: value when locked
+  hash?: string;           // model picks: SHA-256 chain, see /verify
+  prevHash?: string;
   units: number;
   confidence: 1 | 2 | 3;
   tier: "free" | "pro";

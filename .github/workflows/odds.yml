@@ -1,0 +1,51 @@
+name: Refresh Winner odds
+
+# Between the full data refreshes: re-read Winner's odds, re-price, log any new model picks
+# and record the latest price on picks before kickoff (their closing price). Quick: no
+# fixtures are fetched.
+on:
+  schedule:
+    - cron: "47 1-23/2 * * *" # every two hours, in between the full refreshes
+  workflow_dispatch:
+
+concurrency:
+  group: data
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  odds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-1.48.2
+      - name: Fetch Winner odds
+        continue-on-error: true
+        timeout-minutes: 8
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.48.2
+          npx playwright install --with-deps chromium
+          node scripts/fetch-winner.mjs
+      - name: Re-price and update the model picks
+        run: node scripts/build-model.mjs
+      - name: Commit
+        run: |
+          git config user.name "data-bot"
+          git config user.email "data-bot@users.noreply.github.com"
+          git add data/raw data/ledger public/data
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "Refresh Winner odds"
+            git pull --rebase origin main
+            git push
+          fi

@@ -8,8 +8,12 @@ const RESULT_TONE: Record<string, string> = { won: "text-won", lost: "text-lost"
 
 export function selectionText(p: Pick) {
   const [home, away] = p.event.split(" v ");
-  if (p.market === "1X2" || p.market === "Moneyline") return p.selection === "1" ? `${home} to win` : p.selection === "2" ? `${away} to win` : "Draw";
-  if (p.market === "Handicap") return `${p.selection === "1" ? home : p.selection === "2" ? away : "Draw"} (${p.line && p.line > 0 ? "+" : ""}${p.line} handicap)`;
+  if (p.market === "1X2" || p.market === "Moneyline" || p.market === "Winner") return p.selection === "1" ? `${home} to win` : p.selection === "2" ? `${away} to win` : "Draw";
+  if (p.market === "Handicap") {
+    const k = p.selection === "2" ? -(p.line ?? 0) : (p.line ?? 0);
+    return p.selection === "X" ? `Handicap draw (${home} ${(p.line ?? 0) > 0 ? "+" : ""}${p.line})` : `${p.selection === "1" ? home : away} ${k > 0 ? "+" : ""}${k}`;
+  }
+  if (p.market === "Goals" || p.market === "Points") return `${p.selection} ${p.line} ${p.market === "Goals" ? "goals" : "points"}`;
   if (p.market === "Over/Under") return `${p.selection} ${p.line} goals`;
   if (p.market === "BTTS") return `Both teams to score: ${p.selection}`;
   if (p.market === "Double chance") return `Double chance ${p.selection}`;
@@ -27,6 +31,7 @@ export function PickCard({ pick, locked }: { pick: Pick; locked: boolean }) {
         <span className="num muted">{dayLabel(pick.kickoff)} {time(pick.kickoff)}</span>
       </div>
       <h3 className="mt-2 text-lg font-bold">{pick.event}</h3>
+      {pick.hash && <Link to={`/verify#${pick.id}`} className="mt-0.5 inline-flex items-center gap-1 text-xs font-semibold text-won hover:underline">Sealed before kickoff · {pick.tipster}</Link>}
 
       {locked ? (
         <div className="mt-4 flex flex-1 flex-col justify-between gap-4 rounded-xl border border-dashed border-line p-4">

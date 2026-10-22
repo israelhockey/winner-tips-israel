@@ -16,6 +16,7 @@
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { LEAGUES } from "./leagues.mjs";
 import { matchEvents } from "./winner-match.mjs";
+import { updateLedger, verifyChain } from "./ledger.mjs";
 
 const RAW = new URL("../data/raw/", import.meta.url);
 const OUT = new URL("../public/data/", import.meta.url);
@@ -321,8 +322,10 @@ function grade(pick, m) {
     case "1X2": return (sel === "1" && h > a) || (sel === "X" && h === a) || (sel === "2" && h < a) ? "won" : "lost";
     case "Double chance": return (sel.includes("1") && h > a) || (sel.includes("X") && h === a) || (sel.includes("2") && h < a) ? "won" : "lost";
     case "Handicap": { const k = Number(pick.line); const d = h + k - a; return (sel === "1" && d > 0) || (sel === "X" && d === 0) || (sel === "2" && d < 0) ? "won" : "lost"; }
+    case "Goals": case "Points":
     case "Over/Under": { const l = Number(pick.line); const t = h + a; if (t === l) return "void"; return (sel === "Over") === (t > l) ? "won" : "lost"; }
     case "BTTS": return (sel === "Yes") === (h > 0 && a > 0) ? "won" : "lost";
+    case "Winner":
     case "Moneyline": return (sel === "1" && h > a) || (sel === "2" && a > h) ? "won" : "lost";
     default: return null;
   }
@@ -356,6 +359,8 @@ function buildRecord(picks, matchById) {
       won: graded.filter((p) => p.result === "won").length, units: round(profit, 2), staked: round(staked, 2),
       roi: staked ? round(profit / staked) : 0, avgOdds: graded.length ? round(graded.reduce((s, p) => s + p.odds, 0) / graded.length, 2) : 0,
       beatClosing: clv.length ? round(clv.filter((x) => x > 0).length / clv.length) : null,
+      avgClv: clv.length ? round(clv.reduce((a, b) => a + b, 0) / clv.length) : null,
+      clvPicks: clv.length,
       last10: graded.slice(-10).map((p) => (p.result === "won" ? "W" : "L")),
     },
     curve, byLeague: split("leagueName"), byMarket: split("market"), picks: settled.reverse(),
@@ -599,7 +604,31 @@ index.winner = winnerRaw ? { fetchedAt: winnerRaw.fetchedAt, games: index.upcomi
 // Picks ledger
 const picks = (await load(PICKS)) || [];
 const leagueName = Object.fromEntries(LEAGUES.map((l) => [l.key, l.name]));
-const record = buildRecord(picks.map((p) => ({ ...p, leagueName: leagueName[p.league] || p.league })), matchById);
+
+// The model's own picks, logged automatically. Only with fresh Winner odds (under 2 hours old),
+// and never if the existing chain doesn't verify: a broken chain needs a human to look at it.
+const LEDGER = new URL("../data/ledger/model-picks.json", import.meta.url);
+await mkdir(new URL("../data/ledger/", import.meta.url), { recursive: true });
+let ledger = (await load(LEDGER)) || [];
+const broken = verifyChain(ledger);
+if (broken >= 0) {
+  console.log(`LEDGER CHAIN BROKEN at pick ${broken} (${ledger[broken]?.id}); not adding picks`);
+} else {
+  const fresh = winnerRaw && NOW - Date.parse(winnerRaw.fetchedAt) < 2 * 3600e3;
+  const allUpcoming = [];
+  for (const lg of LEAGUES) {
+    const out = await load(new URL(`leagues/${lg.key}.json`, OUT));
+    if (out) for (const m of out.upcoming) allUpcoming.push({ ...m, league: lg.key, sport: lg.sport });
+  }
+  if (fresh) {
+    const { picks: next, added } = updateLedger(ledger, allUpcoming, new Date(NOW).toISOString(), VALUE_EDGE);
+    ledger = next;
+    console.log(`Model picks: ${added} new, ${ledger.length} in the ledger`);
+  } else console.log("Model picks: Winner odds not fresh, no new picks this run");
+  await writeFile(LEDGER, JSON.stringify(ledger, null, 1));
+}
+await writeFile(new URL("ledger.json", OUT), JSON.stringify(ledger.map(({ analysis, ...p }) => p)));
+const record = buildRecord([...picks, ...ledger].map((p) => ({ ...p, leagueName: leagueName[p.league] || p.league })), matchById);
 index.record = record.summary;
 await writeFile(new URL("record.json", OUT), JSON.stringify(record));
 await writeFile(new URL("index.json", OUT), JSON.stringify(index));
