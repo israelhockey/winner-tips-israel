@@ -17,13 +17,21 @@ const RAW_DIR = new URL("../data/raw/", import.meta.url);
 const TSDB = `https://www.thesportsdb.com/api/v1/json/${process.env.TSDB_KEY || "123"}`;
 const OPENFOOTBALL = "https://raw.githubusercontent.com/openfootball/football.json/master";
 const NBA_SCHEDULE = "https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json";
-const TSDB_GAP_MS = 2500;
+// The free key throttles bursts with a two-minute penalty, so pace requests well under it.
+const TSDB_GAP_MS = Number(process.env.TSDB_GAP_MS || 5000);
+// Stop starting new TheSportsDB work after this long; what is done is saved and the next run continues.
+const BUDGET_MS = Number(process.env.FETCH_BUDGET_MIN || 30) * 60e3;
+const STARTED = Date.now();
+const overBudget = () => Date.now() - STARTED > BUDGET_MS;
 const FULL_EVERY_MS = 24 * 3600 * 1000;
 
 const args = process.argv.slice(2);
 const forceFull = args.includes("--full");
 const picked = args.filter((a) => !a.startsWith("--"));
-const leagues = picked.length ? LEAGUES.filter((l) => picked.includes(l.key)) : LEAGUES;
+// Cheap sources first (one request per league), then TheSportsDB round by round.
+const order = { nba: 0, openfootball: 1, tsdb: 2 };
+const leagues = (picked.length ? LEAGUES.filter((l) => picked.includes(l.key)) : LEAGUES)
+  .slice().sort((a, b) => order[a.source] - order[b.source] || Number(!!b.featured) - Number(!!a.featured));
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let lastTsdb = 0;
@@ -36,6 +44,7 @@ async function getJson(url, { tries = 5, tsdb = false } = {}) {
   }
   const res = await fetch(url, { headers: { "user-agent": "winner-tips-israel data job" } });
   if (res.status === 429 && tries > 0) {
+    if (overBudget()) throw new Error("rate limited and out of time; will continue next run");
     const wait = (Number(res.headers.get("retry-after")) || 30) + 2;
     console.log(`  rate limited, waiting ${wait}s`);
     await sleep(wait * 1000);
@@ -103,7 +112,7 @@ function fromTsdbEvent(e, season) {
 async function fetchTsdb(league, prev, full) {
   const prevRounds = prev?.rounds || {};
   const rounds = {};
-  let fetched = 0;
+  let fetched = 0, partial = false;
   for (const season of league.seasons) {
     for (let r = 1; r <= league.maxRounds; r++) {
       const key = `${season}:${r}`;
@@ -112,19 +121,22 @@ async function fetchTsdb(league, prev, full) {
       const oldEmpty = old && old.matches.length === 0;
       // Keep settled rounds, and empty rounds from a past season, unless this is a full refresh.
       const pastSeason = season !== league.seasons.at(-1);
-      if (!full && old && (settled || (oldEmpty && pastSeason))) {
-        rounds[key] = old;
-        continue;
-      }
-      const j = await getJson(`${TSDB}/eventsround.php?id=${league.tsdbId}&r=${r}&s=${season}`, { tsdb: true });
+      // Past seasons are fetched once and kept (unless --full); current-season rounds are kept
+      // once settled, and refreshed on the daily full pass to catch corrections.
+      const keep = old && ((pastSeason && !forceFull) || (!full && (settled || oldEmpty)));
+      if (keep) { rounds[key] = old; continue; }
+      if (overBudget()) { if (old) rounds[key] = old; partial = true; continue; }
+      let j;
+      try { j = await getJson(`${TSDB}/eventsround.php?id=${league.tsdbId}&r=${r}&s=${season}`, { tsdb: true }); }
+      catch (err) { console.log(`  round ${r} (${season}): ${err.message}`); if (old) rounds[key] = old; partial = true; continue; }
       fetched++;
       rounds[key] = { fetchedAt: new Date().toISOString(), matches: (j?.events || []).map((e) => fromTsdbEvent(e, season)) };
     }
   }
-  console.log(`  ${fetched} rounds fetched from TheSportsDB`);
+  console.log(`  ${fetched} rounds fetched from TheSportsDB${partial ? " (stopped early; the next run continues)" : ""}`);
   const seen = new Set();
   const matches = Object.values(rounds).flatMap((x) => x.matches).filter((m) => !seen.has(m.id) && seen.add(m.id));
-  return { matches, rounds };
+  return { matches, rounds, partial };
 }
 
 async function fetchOpenfootball(league) {
@@ -169,11 +181,12 @@ async function fillRecentFromTsdb(league, matches) {
   if (!league.tsdbId) return;
   const now = Date.now();
   const season = league.seasons.at(-1);
-  const tsdbSeason = `20${season.slice(0, 2)}${season.slice(2, 4)}-20${season.slice(0, 2)}${season.slice(5, 7)}`;
+  const tsdbSeason = `${season.slice(0, 4)}-20${season.slice(5, 7)}`; // "2026-27" -> "2026-2027"
   const stale = matches.filter((m) => m.season === season && m.status !== "FT" && Date.parse(m.kickoff) < now - 2 * 3600e3);
   const rounds = [...new Set(stale.map((m) => m.round).filter(Boolean))].slice(-6);
   let filled = 0;
   for (const r of rounds) {
+    if (overBudget()) break;
     const j = await getJson(`${TSDB}/eventsround.php?id=${league.tsdbId}&r=${r}&s=${tsdbSeason}`, { tsdb: true });
     for (const e of j?.events || []) {
       const t = fromTsdbEvent(e, season);
@@ -234,7 +247,7 @@ for (const league of leagues) {
       key: league.key,
       source: league.source,
       fetchedAt: new Date().toISOString(),
-      fullAt: league.source !== "tsdb" || full ? new Date().toISOString() : prev?.fullAt,
+      fullAt: league.source !== "tsdb" || (full && !result.partial) ? new Date().toISOString() : prev?.fullAt,
       matches: result.matches,
       ...(result.rounds ? { rounds: result.rounds } : {}),
     }));
