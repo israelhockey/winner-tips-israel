@@ -170,7 +170,9 @@ const BASKET = {
   "il-basket": { hca: 90, sd: 11.5, perPoint: 26 },
 };
 
-function runEloBasketball(matches, key) {
+// onGame(m, pHome, spread) is called before each finished game updates the ratings: that's
+// a genuine before-tip-off prediction, which the model check uses.
+function runEloBasketball(matches, key, onGame) {
   const cfg = BASKET[key];
   const r = new Map();
   let season = null;
@@ -185,6 +187,7 @@ function runEloBasketball(matches, key) {
     const rh = r.get(m.home) ?? 1500, ra = r.get(m.away) ?? 1500;
     const dr = rh + cfg.hca - ra;
     const exp = 1 / (1 + 10 ** (-dr / 400));
+    onGame?.(m, exp, dr / cfg.perPoint);
     const res = m.hs > m.as ? 1 : 0;
     const mov = Math.abs(m.hs - m.as);
     const mult = ((mov + 3) ** 0.8) / (7.5 + 0.006 * (res ? dr : -dr));
@@ -232,6 +235,41 @@ function table(matches, sport) {
 // ---------------------------------------------------------------------------------------------
 // Model check: walk-forward, refitting weekly, scored against what actually happened
 // ---------------------------------------------------------------------------------------------
+
+// Basketball model check: every game after a warm-up, predicted by the ratings as they stood
+// before tip-off. No draws, so the baseline is simply the share of home wins so far.
+function backtestBasketball(matches, key) {
+  const done = matches.filter((m) => m.status === "FT" && m.hs !== m.as).sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+  if (done.length < 120) return null;
+  const start = Date.parse(done[Math.floor(done.length * 0.3)].kickoff);
+  let n = 0, hit = 0, brier = 0, logloss = 0, baseBrier = 0, homeWins = 0, seen = 0, miss = 0;
+  const buckets = Array.from({ length: 10 }, () => ({ n: 0, p: 0, y: 0 }));
+  runEloBasketball(done, key, (m, p, spread) => {
+    const y = m.hs > m.as ? 1 : 0;
+    if (Date.parse(m.kickoff) >= start && seen > 0) {
+      const base = homeWins / seen;
+      n++;
+      if ((p >= 0.5 ? 1 : 0) === y) hit++;
+      brier += (p - y) ** 2 + ((1 - p) - (1 - y)) ** 2;
+      baseBrier += (base - y) ** 2 + ((1 - base) - (1 - y)) ** 2;
+      logloss += -Math.log(Math.max(y ? p : 1 - p, 1e-6));
+      miss += Math.abs(spread - (m.hs - m.as));
+      for (const [q, yy] of [[p, y], [1 - p, 1 - y]]) { const b = buckets[Math.min(9, Math.floor(q * 10))]; b.n++; b.p += q; b.y += yy; }
+    }
+    seen++; homeWins += y;
+  });
+  if (!n) return null;
+  return {
+    matches: n,
+    from: new Date(start).toISOString().slice(0, 10),
+    hitRate: round(hit / n),
+    brier: round(brier / n),
+    baselineBrier: round(baseBrier / n),
+    logLoss: round(logloss / n),
+    marginMiss: round(miss / n, 1),
+    calibration: buckets.filter((b) => b.n >= 10).map((b) => ({ predicted: round(b.p / b.n), actual: round(b.y / b.n), n: b.n })),
+  };
+}
 
 function backtestFootball(matches) {
   const done = matches.filter((m) => m.status === "FT").sort((a, b) => a.kickoff.localeCompare(b.kickoff));
@@ -523,6 +561,7 @@ for (const lg of LEAGUES) {
     ratings = teams.map((t) => ({ team: t, rating: Math.round(elo.rating(t, lg)) })).sort((a, b) => b.rating - a.rating);
   } else {
     const model = runEloBasketball(matches, lg.key);
+    check = backtestBasketball(matches, lg.key);
     predict = (m) => model.predict(m.home, m.away);
     ratings = [...model.ratings].filter(([t]) => currentMatches.some((m) => m.home === t || m.away === t))
       .map(([team, r]) => ({ team, rating: Math.round(r) })).sort((a, b) => b.rating - a.rating);

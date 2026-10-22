@@ -108,6 +108,7 @@ export interface ModelCheck {
   brier: number;
   baselineBrier: number;
   logLoss: number;
+  marginMiss?: number; // basketball: average points between our predicted and the real winning margin
   calibration: { predicted: number; actual: number; n: number }[];
 }
 

@@ -154,10 +154,14 @@ function CheckView({ lg }: { lg: League }) {
           <div><dt className="text-xs muted">Our favourite won</dt><dd className="display num text-2xl font-bold">{pct(c.hitRate)}</dd></div>
           <div><dt className="text-xs muted">Brier score</dt><dd className="display num text-2xl font-bold text-won">{c.brier.toFixed(3)}</dd></div>
           <div><dt className="text-xs muted">Baseline Brier</dt><dd className="display num text-2xl font-bold muted">{c.baselineBrier.toFixed(3)}</dd></div>
-          <div><dt className="text-xs muted">Log loss</dt><dd className="display num text-2xl font-bold">{c.logLoss.toFixed(3)}</dd></div>
+          {c.marginMiss !== undefined
+            ? <div><dt className="text-xs muted">Margin, average miss</dt><dd className="display num text-2xl font-bold">{c.marginMiss.toFixed(1)} pts</dd></div>
+            : <div><dt className="text-xs muted">Log loss</dt><dd className="display num text-2xl font-bold">{c.logLoss.toFixed(3)}</dd></div>}
         </dl>
         <p className="mt-6 text-sm muted">
-          The Brier score measures how far our percentages were from what happened: 0 would be perfect, and lower is better. The baseline is a simple guess that only knows how often home wins, draws and away wins happen in this league. Beating it means the model adds real information.
+          The Brier score measures how far our percentages were from what happened: 0 would be perfect, and lower is better. {lg.sport === "basketball"
+            ? <> The baseline is a simple guess that only knows how often the home team wins in this league. Beating it means the ratings add real information. The margin figure is how many points, on average, our predicted winning margin was off by. </>
+            : <> The baseline is a simple guess that only knows how often home wins, draws and away wins happen in this league. Beating it means the model adds real information. </>}
           This is a test of the model's probabilities, not a betting record: that's on the <Link to="/record" className="underline underline-offset-2">record page</Link>.
         </p>
       </div>
