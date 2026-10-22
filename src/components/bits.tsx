@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import { kit } from "@/lib/kits";
 import { useLogos, logoSrc } from "@/lib/data";
+import { leagueStyle } from "@/lib/leagueStyle";
 
 // A club's logo; where we have none, a badge in its kit colours with its initials.
 export function TeamMark({ name, size = 28, sport = "football" }: { name: string; size?: number; sport?: string }) {
@@ -85,5 +86,16 @@ export function Stat({ label, value, tone }: { label: string; value: ReactNode; 
       <div className={`display num text-2xl font-bold ${tone === "good" ? "text-won" : tone === "bad" ? "text-lost" : ""}`}>{value}</div>
       <div className="text-xs muted">{label}</div>
     </div>
+  );
+}
+
+// A competition's badge: its colour with its short code.
+export function LeagueBadge({ league, size = 28 }: { league?: string; size?: number }) {
+  const s = leagueStyle(league);
+  return (
+    <span className="inline-grid shrink-0 place-items-center rounded-md font-display font-extrabold leading-none text-white"
+      style={{ width: size, height: size, background: s.color, fontSize: size * (s.code.length > 2 ? 0.34 : 0.44), boxShadow: "inset 0 -3px 0 rgba(0,0,0,.25)" }} aria-hidden>
+      {s.code}
+    </span>
   );
 }

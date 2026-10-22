@@ -2,7 +2,9 @@ import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useLeague } from "@/lib/data";
 import { ago, pct, shortDate } from "@/lib/format";
-import { Form, Loading, Empty, TeamMark } from "@/components/bits";
+import { Form, Loading, Empty, TeamMark, LeagueBadge, useTeamColor } from "@/components/bits";
+import { PageHero } from "@/components/PageHero";
+import { leagueStyle } from "@/lib/leagueStyle";
 import { Board } from "@/components/Board";
 import { HowToRead } from "@/components/HowToRead";
 import type { League } from "@/lib/types";
@@ -18,22 +20,32 @@ export default function LeaguePage() {
   if (!lg) return <Loading what="the league" />;
   const tabs = TABS.filter((t) => (t === "Table" ? lg.table.length > 0 : t === "Model check" ? !!lg.check : true));
   const current = tabs.includes(tab) ? tab : tabs[0];
+  const style = leagueStyle(lg.key);
 
   return (
     <>
-      <div className="text-sm muted"><Link to="/leagues" className="hover:text-ink">Leagues</Link> / {lg.country}</div>
-      <h1 className="h1 mt-2">{lg.name}</h1>
-      <p className="mt-2 text-sm text-ink-faint">Season {lg.season.replace("-20", "/").replace("-", "/")}. Data updated {ago(lg.fetchedAt)}.</p>
-
-      <div className="mt-8 flex gap-1 overflow-x-auto border-b border-line" role="tablist">
-        {tabs.map((t) => (
-          <button key={t} role="tab" aria-selected={current === t} onClick={() => setTab(t)}
-            className={`whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold ${current === t ? "border-accent text-ink" : "border-transparent muted hover:text-ink"}`}>
-            {t}
-          </button>
-        ))}
-      </div>
-      <div className="mt-6">
+      <PageHero
+        eyebrow={<Link to="/leagues" className="hover:underline">Leagues · {lg.country}</Link>}
+        title={lg.name}
+        intro={`Season ${lg.season.replace("-20", "/").replace("-", "/")}. Data updated ${ago(lg.fetchedAt)}.`}
+        color={style.color} deep={style.deep}
+        badge={lg.table.length >= 3 ? <Podium lg={lg} /> : <LeagueBadge league={lg.key} size={110} />}
+        stats={[
+          [lg.results.filter((r) => r[6] === lg.season).length, "played this season"],
+          [lg.upcoming.length, "coming up"],
+          ...(lg.table[0] ? [[lg.table[0].team, "top of the table"] as [string, string]] : []),
+        ]}
+      >
+        <div className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 md:mx-0 md:px-0" role="tablist">
+          {tabs.map((t) => (
+            <button key={t} role="tab" aria-selected={current === t} onClick={() => setTab(t)}
+              className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors ${current === t ? "bg-white text-ink" : "bg-white/10 text-white hover:bg-white/20"}`}>
+              {t}
+            </button>
+          ))}
+        </div>
+      </PageHero>
+      <div className="mt-8">
         {current === "Table" && <TableView lg={lg} />}
         {current === "Fixtures" && <FixturesView lg={lg} />}
         {current === "Results" && <ResultsView lg={lg} />}
@@ -60,12 +72,15 @@ function TableView({ lg }: { lg: League }) {
         </thead>
         <tbody>
           {lg.table.map((r, i) => (
-            <tr key={r.team} className="border-b border-line text-right last:border-0">
-              <td className="px-3 py-2.5 text-left muted">{i + 1}</td>
-              <td className="px-3 py-2.5 text-left"><span className="flex items-center gap-2 font-semibold"><TeamMark name={r.team} size={22} sport={lg.sport} />{r.team}</span></td>
+            <tr key={r.team} className={`border-b border-line text-right last:border-0 hover:bg-hover ${i === 0 ? "bg-marker/15" : ""}`}>
+              <td className="relative px-3 py-3 text-left">
+                <span className={`absolute inset-y-1 left-0 w-1 rounded-r ${i === 0 ? "bg-marker-deep" : i < 4 ? "bg-won" : i >= lg.table.length - 2 ? "bg-lost" : ""}`} />
+                <span className="font-display text-base font-bold">{i + 1}</span>
+              </td>
+              <td className="px-3 py-3 text-left"><span className="flex items-center gap-2.5 font-semibold"><TeamMark name={r.team} size={26} sport={lg.sport} />{r.team}</span></td>
               <td className="px-3 py-2.5">{r.p}</td><td className="px-3 py-2.5">{r.w}</td>{fb && <td className="px-3 py-2.5">{r.d}</td>}
               <td className="px-3 py-2.5">{r.l}</td><td className="px-3 py-2.5">{r.gd > 0 ? `+${r.gd}` : r.gd}</td>
-              <td className="px-3 py-2.5 font-bold">{r.pts}</td>
+              <td className="px-3 py-2.5"><span className="num font-display text-lg font-extrabold">{r.pts}</span></td>
               <td className="px-3 py-2.5 text-left"><Form form={r.form} /></td>
             </tr>
           ))}
@@ -119,16 +134,7 @@ function RatingsView({ lg }: { lg: League }) {
           : "Our ranking of how strong each team really is, whatever the table says. A team rated 100 points higher would win about 64% of games on a neutral floor."}
       </p>
       <div className="panel divide-y divide-line">
-        {lg.ratings.map((r, i) => (
-          <div key={r.team} className="grid grid-cols-[2rem_minmax(0,1fr)_minmax(0,1.2fr)] items-center gap-3 px-4 py-2.5 text-sm md:grid-cols-[2rem_minmax(0,1fr)_minmax(0,1.2fr)_auto]">
-            <span className="num muted">{i + 1}</span>
-            <span className="truncate font-semibold">{r.team}</span>
-            <span className="h-2 rounded-full bg-ink-faint" style={{ width: `${8 + ((r.rating - min) / (max - min || 1)) * 92}%` }} />
-            <span className="num hidden text-xs muted md:block">
-              {poisson ? `attack ${r.attack?.toFixed(2)}, defence ${r.defence?.toFixed(2)}` : r.rating}
-            </span>
-          </div>
-        ))}
+        {lg.ratings.map((r, i) => <RatingRow key={r.team} r={r} i={i} lg={lg} min={min} max={max} poisson={poisson} />)}
       </div>
     </>
   );
@@ -173,4 +179,34 @@ function CheckView({ lg }: { lg: League }) {
       </div>
     </div>
   );
+}
+
+function RatingRow({ r, i, lg, min, max, poisson }: { r: League["ratings"][number]; i: number; lg: League; min: number; max: number; poisson: boolean }) {
+  const c = useTeamColor(r.team, lg.sport);
+  return (
+    <div className="grid grid-cols-[2rem_minmax(0,1fr)_minmax(0,1.3fr)] items-center gap-3 px-4 py-2.5 text-sm md:grid-cols-[2rem_minmax(0,1fr)_minmax(0,1.4fr)_11rem]">
+      <span className="font-display text-base font-bold text-ink-muted">{i + 1}</span>
+      <span className="flex min-w-0 items-center gap-2.5 font-semibold"><TeamMark name={r.team} size={24} sport={lg.sport} /><span className="truncate">{r.team}</span></span>
+      <span className="h-3 rounded-full transition-[width] duration-700" style={{ width: `${8 + ((r.rating - min) / (max - min || 1)) * 92}%`, background: c }} />
+      <span className="num hidden text-xs muted md:block">
+        {poisson ? `attack ${r.attack?.toFixed(2)} · defence ${r.defence?.toFixed(2)}` : `rating ${r.rating}`}
+      </span>
+    </div>
+  );
+}
+
+// The top three, on a podium.
+function Podium({ lg }: { lg: League }) {
+  const [a, b, c] = lg.table;
+  const step = (r: typeof a, place: number, h: string) => (
+    <div className="flex w-24 flex-col items-center">
+      <span className="grid h-14 w-14 place-items-center rounded-full bg-white shadow-lg"><TeamMark name={r.team} size={38} sport={lg.sport} /></span>
+      <span className="mt-1.5 w-full truncate text-center text-xs font-semibold text-white/90">{r.team}</span>
+      <span className={`mt-1.5 flex w-full flex-col items-center justify-start rounded-t-md bg-white/15 pt-2 backdrop-blur-sm ${h}`}>
+        <span className="font-display text-2xl font-extrabold leading-none">{place}</span>
+        <span className="num text-[11px] text-white/70">{r.pts} pts</span>
+      </span>
+    </div>
+  );
+  return <div className="flex items-end gap-2">{step(b, 2, "h-16")}{step(a, 1, "h-24")}{step(c, 3, "h-12")}</div>;
 }

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { MatchCard } from "./MatchCard";
+import { LeagueBadge } from "./bits";
 import { dayKey, dayLabel } from "@/lib/format";
 import { VALUE_EDGE } from "@/lib/config";
 import type { Match } from "@/lib/types";
@@ -58,10 +59,10 @@ export function Board({ matches, leagueFilter = true }: { matches: Match[]; leag
       <div className="mt-6 space-y-8">
         {groups.map(([k, g]) => (
           <section key={k}>
-            <h3 className="mb-3 flex items-center gap-3 font-display text-xl font-extrabold">
-              {g.name}<span className="h-px flex-1 bg-line" /><span className="font-sans text-xs font-medium text-ink-faint">{g.list.length} game{g.list.length === 1 ? "" : "s"}</span>
+            <h3 className="mb-4 flex items-center gap-3 font-display text-2xl font-extrabold">
+              <LeagueBadge league={k} size={30} />{g.name}<span className="h-px flex-1 bg-line" /><span className="font-sans text-xs font-medium text-ink-faint">{g.list.length} game{g.list.length === 1 ? "" : "s"}</span>
             </h3>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {g.list.map((m) => <MatchCard key={m.id} m={m} leagueKey={m.league!} />)}
             </div>
           </section>
