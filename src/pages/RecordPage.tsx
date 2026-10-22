@@ -55,7 +55,7 @@ export default function RecordPage() {
             <div className="panel overflow-x-auto">
               <table className="w-full min-w-[720px] text-sm">
                 <thead className="text-left text-xs muted">
-                  <tr className="border-b border-ink-line">
+                  <tr className="border-b border-line">
                     <th className="px-4 py-3 font-semibold">Locked</th><th className="px-4 py-3 font-semibold">Game</th><th className="px-4 py-3 font-semibold">Pick</th>
                     <th className="px-4 py-3 text-right font-semibold">Odds</th><th className="px-4 py-3 text-right font-semibold">Stake</th>
                     <th className="px-4 py-3 text-right font-semibold">Result</th><th className="px-4 py-3 text-right font-semibold">Profit</th>
@@ -63,9 +63,9 @@ export default function RecordPage() {
                 </thead>
                 <tbody className="num">
                   {rows.map((p) => (
-                    <tr key={p.id} className="border-b border-ink-line last:border-0">
+                    <tr key={p.id} className="border-b border-line last:border-0">
                       <td className="px-4 py-3 muted">{shortDate(p.lockedAt)}</td>
-                      <td className="px-4 py-3"><div className="font-semibold">{p.event}</div><div className="text-xs text-chalk-faint">{p.leagueName}</div></td>
+                      <td className="px-4 py-3"><div className="font-semibold">{p.event}</div><div className="text-xs text-ink-faint">{p.leagueName}</div></td>
                       <td className="px-4 py-3">{selectionText(p)}</td>
                       <td className="px-4 py-3 text-right">{p.odds.toFixed(2)}</td>
                       <td className="px-4 py-3 text-right">{p.units}u</td>
@@ -88,11 +88,11 @@ export default function RecordPage() {
 function Split({ title, rows }: { title: string; rows: PicksRecord["byLeague"] }) {
   return (
     <div className="panel">
-      <h2 className="border-b border-ink-line px-5 py-4 font-semibold">{title}</h2>
+      <h2 className="border-b border-line px-5 py-4 font-semibold">{title}</h2>
       <table className="w-full text-sm num">
         <tbody>
           {rows.map((r) => (
-            <tr key={r.key} className="border-b border-ink-line last:border-0">
+            <tr key={r.key} className="border-b border-line last:border-0">
               <td className="px-5 py-3 font-semibold">{r.key}</td>
               <td className="px-3 py-3 text-right muted">{r.won}/{r.picks}</td>
               <td className="px-3 py-3 text-right muted">{pct(r.roi, 1)}</td>

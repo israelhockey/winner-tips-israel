@@ -19,16 +19,16 @@ export default function Leagues() {
       {groups.filter(([, ls]) => ls.length).map(([title, ls]) => (
         <section key={title} className="mt-10">
           <h2 className="h2 mb-4">{title}</h2>
-          <div className="panel divide-y divide-ink-line">
+          <div className="panel divide-y divide-line">
             {ls.map((l) => (
-              <Link key={l.key} to={`/leagues/${l.key}`} className="grid grid-cols-[1fr_auto] items-center gap-4 px-5 py-4 hover:bg-ink-hover md:grid-cols-[1.2fr_1fr_1fr_auto]">
+              <Link key={l.key} to={`/leagues/${l.key}`} className="grid grid-cols-[1fr_auto] items-center gap-4 px-5 py-4 hover:bg-hover md:grid-cols-[1.2fr_1fr_1fr_auto]">
                 <div>
                   <div className="font-semibold">{l.name}</div>
                   <div className="text-xs muted">{l.country}, {l.season.replace("-20", "/").replace("-", "/")}</div>
                 </div>
                 <div className="hidden text-sm muted md:block num">{l.played} played this season</div>
                 <div className="hidden text-sm muted md:block num">{l.nextKickoff ? `Next: ${dayLabel(l.nextKickoff)} ${time(l.nextKickoff)}` : "No games scheduled"}</div>
-                <div className="text-xs text-chalk-faint">Updated {ago(l.fetchedAt)}</div>
+                <div className="text-xs text-ink-faint">Updated {ago(l.fetchedAt)}</div>
               </Link>
             ))}
           </div>

@@ -3,36 +3,63 @@
 @tailwind utilities;
 
 @layer base {
-  html { background: #0C1424; color-scheme: dark; }
-  body {
-    @apply bg-ink text-chalk font-sans antialiased;
-    font-variation-settings: "wdth" 100;
-    min-height: 100vh;
-  }
-  /* Odds and scores line up in columns. */
+  html { background: #EEF1EB; color-scheme: light; }
+  body { @apply bg-paper text-ink font-sans antialiased; min-height: 100vh; }
   .num { font-variant-numeric: tabular-nums; }
-  .wide { font-variation-settings: "wdth" 118; letter-spacing: -0.01em; }
-  .narrow { font-variation-settings: "wdth" 80; }
-  :focus-visible { outline: 2px solid #F5B83D; outline-offset: 2px; border-radius: 6px; }
-  ::selection { background: #F5B83D55; }
+  /* Stadium-signage display face for headlines and big numbers. */
+  .display { @apply font-display; font-weight: 800; letter-spacing: 0.005em; text-transform: none; }
+  :focus-visible { outline: 2px solid #0E6B43; outline-offset: 2px; border-radius: 4px; }
+  ::selection { background: #FFE14D; color: #0D1B14; }
+  h1, h2, h3 { text-wrap: balance; }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
   }
 }
 
 @layer components {
-  .panel { @apply bg-ink-raised border border-ink-line rounded-card; }
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors; }
-  .btn-primary { @apply btn bg-amber text-ink hover:bg-amber-deep; }
-  .btn-quiet { @apply btn border border-ink-line text-chalk hover:bg-ink-hover; }
-  .chip { @apply inline-flex items-center gap-1 rounded-full border border-ink-line px-3 py-1 text-xs text-chalk-muted hover:text-chalk hover:border-chalk-faint transition-colors; }
-  .chip-on { @apply border-amber text-amber; }
-  .h1 { @apply wide text-3xl md:text-4xl font-bold; }
-  .h2 { @apply wide text-xl md:text-2xl font-bold; }
+  .panel { @apply bg-card border border-line rounded-card; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded px-4 py-2.5 text-sm font-semibold transition-colors; }
+  .btn-primary { @apply btn bg-ink text-paper hover:bg-accent-deep; }
+  .btn-quiet { @apply btn border border-line bg-card text-ink hover:border-ink-faint; }
+  .btn-marker { @apply btn bg-marker text-ink hover:bg-marker-deep; }
+  .chip { @apply inline-flex items-center gap-1 rounded-full border border-line bg-card px-3 py-1 text-xs font-medium text-ink-muted hover:text-ink hover:border-ink-faint transition-colors; }
+  .chip-on { @apply border-ink bg-ink text-paper hover:text-paper; }
+  .h1 { @apply display text-3xl md:text-4xl; }
+  .h2 { @apply display text-2xl; }
   .h3 { @apply text-lg font-semibold; }
-  .muted { @apply text-chalk-muted; }
+  .muted { @apply text-ink-muted; }
+  /* A highlighter stroke behind text, as if marked on a coupon. */
+  .marked { background: linear-gradient(transparent 12%, #FFE14D 12%, #FFE14D 88%, transparent 88%); padding: 0 0.2em; margin: 0 -0.2em; }
 }
 
-/* The one orchestrated moment: the record strip ticks in on first load. */
-@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.rise { animation: rise 0.5s ease-out both; }
+/* The coupon: a printed slip with perforated top and bottom edges. */
+.coupon {
+  position: relative;
+  background: #fff;
+  box-shadow: 0 18px 40px -18px rgba(5, 25, 15, 0.55);
+  --notch: radial-gradient(circle at 6px 0, transparent 5px, #fff 5.5px);
+}
+.coupon::before, .coupon::after {
+  content: ""; position: absolute; left: 0; right: 0; height: 6px;
+  background: radial-gradient(circle at 6px 6px, transparent 4.5px, #fff 5px) repeat-x;
+  background-size: 12px 6px;
+}
+.coupon::before { top: -6px; transform: scaleY(-1); }
+.coupon::after { bottom: -6px; }
+
+/* Faint pitch markings behind the hero. */
+.pitch-bg { background-color: #0E5A3A; background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 80px, transparent 80px 160px); }
+
+/* Ticker: the one moving thing on the page. */
+@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.ticker-track { animation: ticker 70s linear infinite; }
+.ticker:hover .ticker-track { animation-play-state: paused; }
+
+/* Page-load: the coupon prints up and the marker strokes draw in. */
+@keyframes print { from { opacity: 0; transform: translateY(18px) rotate(-1.5deg); } to { opacity: 1; transform: translateY(0) rotate(-1.5deg); } }
+.print-in { animation: print 0.7s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes mark { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.mark-in { animation: mark 0.45s ease-out both; }
+
+/* Full-bleed bands inside the centred page column. */
+.bleed { margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); }

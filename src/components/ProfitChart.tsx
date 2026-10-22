@@ -14,14 +14,14 @@ export function ProfitChart({ points }: { points: { at: string; units: number }[
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={`Running profit, now ${last.toFixed(2)} units after ${points.length} settled picks`}>
       {ticks.map((t) => (
         <g key={t}>
-          <line x1={P.l} x2={W - P.r} y1={Y(t)} y2={Y(t)} stroke="#24324D" />
-          <text x={P.l - 8} y={Y(t) + 4} textAnchor="end" fontSize="11" fill="#5D6B84" className="num">{t.toFixed(1)}</text>
+          <line x1={P.l} x2={W - P.r} y1={Y(t)} y2={Y(t)} stroke="#D2DAD3" />
+          <text x={P.l - 8} y={Y(t) + 4} textAnchor="end" fontSize="11" fill="#8A988F" className="num">{t.toFixed(1)}</text>
         </g>
       ))}
-      <line x1={P.l} x2={W - P.r} y1={Y(0)} y2={Y(0)} stroke="#8B98AE" strokeDasharray="3 4" />
-      <path d={path} fill="none" stroke={last >= 0 ? "#46C38A" : "#E8705F"} strokeWidth="2.25" strokeLinejoin="round" />
-      <text x={P.l} y={H - 6} fontSize="11" fill="#5D6B84">{points[0]?.at}</text>
-      <text x={W - P.r} y={H - 6} fontSize="11" fill="#5D6B84" textAnchor="end">{points.at(-1)?.at}</text>
+      <line x1={P.l} x2={W - P.r} y1={Y(0)} y2={Y(0)} stroke="#55665C" strokeDasharray="3 4" />
+      <path d={path} fill="none" stroke={last >= 0 ? "#17905A" : "#D2432B"} strokeWidth="2.25" strokeLinejoin="round" />
+      <text x={P.l} y={H - 6} fontSize="11" fill="#8A988F">{points[0]?.at}</text>
+      <text x={W - P.r} y={H - 6} fontSize="11" fill="#8A988F" textAnchor="end">{points.at(-1)?.at}</text>
     </svg>
   );
 }

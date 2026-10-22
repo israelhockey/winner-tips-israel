@@ -26,7 +26,7 @@ export default function Picks() {
       </p>
 
       {lockedCount > 0 && tier !== "pro" && (
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-card border border-amber/40 bg-amber-soft px-5 py-4">
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-card border border-accent/40 bg-accent-soft px-5 py-4">
           <p className="text-sm"><span className="font-semibold">{lockedCount} Pro pick{lockedCount === 1 ? "" : "s"}</span> on this card {lockedCount === 1 ? "is" : "are"} locked for you.</p>
           <Link to="/membership" className="btn-primary">{tier === "visitor" ? "Join free" : "Go Pro"}</Link>
         </div>

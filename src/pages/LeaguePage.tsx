@@ -20,14 +20,14 @@ export default function LeaguePage() {
 
   return (
     <>
-      <div className="text-sm muted"><Link to="/leagues" className="hover:text-chalk">Leagues</Link> / {lg.country}</div>
+      <div className="text-sm muted"><Link to="/leagues" className="hover:text-ink">Leagues</Link> / {lg.country}</div>
       <h1 className="h1 mt-2">{lg.name}</h1>
-      <p className="mt-2 text-sm text-chalk-faint">Season {lg.season.replace("-20", "/").replace("-", "/")}. Data updated {ago(lg.fetchedAt)}.</p>
+      <p className="mt-2 text-sm text-ink-faint">Season {lg.season.replace("-20", "/").replace("-", "/")}. Data updated {ago(lg.fetchedAt)}.</p>
 
-      <div className="mt-8 flex gap-1 overflow-x-auto border-b border-ink-line" role="tablist">
+      <div className="mt-8 flex gap-1 overflow-x-auto border-b border-line" role="tablist">
         {tabs.map((t) => (
           <button key={t} role="tab" aria-selected={current === t} onClick={() => setTab(t)}
-            className={`whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold ${current === t ? "border-amber text-chalk" : "border-transparent muted hover:text-chalk"}`}>
+            className={`whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold ${current === t ? "border-accent text-ink" : "border-transparent muted hover:text-ink"}`}>
             {t}
           </button>
         ))}
@@ -49,7 +49,7 @@ function TableView({ lg }: { lg: League }) {
     <div className="panel overflow-x-auto">
       <table className="w-full min-w-[640px] text-sm num">
         <thead className="text-xs muted">
-          <tr className="border-b border-ink-line text-right">
+          <tr className="border-b border-line text-right">
             <th className="w-10 px-3 py-3 text-left font-semibold">#</th><th className="px-3 py-3 text-left font-semibold">Team</th>
             <th className="px-3 py-3 font-semibold">P</th><th className="px-3 py-3 font-semibold">W</th>{fb && <th className="px-3 py-3 font-semibold">D</th>}
             <th className="px-3 py-3 font-semibold">L</th><th className="px-3 py-3 font-semibold">{fb ? "GD" : "+/-"}</th>
@@ -58,7 +58,7 @@ function TableView({ lg }: { lg: League }) {
         </thead>
         <tbody>
           {lg.table.map((r, i) => (
-            <tr key={r.team} className="border-b border-ink-line text-right last:border-0">
+            <tr key={r.team} className="border-b border-line text-right last:border-0">
               <td className="px-3 py-2.5 text-left muted">{i + 1}</td>
               <td className="px-3 py-2.5 text-left"><span className="flex items-center gap-2 font-semibold"><TeamMark name={r.team} size={22} />{r.team}</span></td>
               <td className="px-3 py-2.5">{r.p}</td><td className="px-3 py-2.5">{r.w}</td>{fb && <td className="px-3 py-2.5">{r.d}</td>}
@@ -96,12 +96,12 @@ function ResultsView({ lg }: { lg: League }) {
   const rows = lg.results.filter((r) => r[6] === lg.season).slice().reverse();
   if (!rows.length) return <p className="panel p-6 muted">No results yet this season.</p>;
   return (
-    <div className="panel divide-y divide-ink-line">
+    <div className="panel divide-y divide-line">
       {rows.map((r) => (
-        <Link to={`/match/${lg.key}/${r[0]}`} key={r[0]} className="grid grid-cols-[5.5rem_1fr_auto_1fr] items-center gap-3 px-4 py-3 text-sm hover:bg-ink-hover">
+        <Link to={`/match/${lg.key}/${r[0]}`} key={r[0]} className="grid grid-cols-[5.5rem_1fr_auto_1fr] items-center gap-3 px-4 py-3 text-sm hover:bg-hover">
           <span className="num text-xs muted">{shortDate(r[1])}</span>
           <span className={`truncate text-right ${r[4] > r[5] ? "font-bold" : ""}`}>{r[2]}</span>
-          <span className="num rounded bg-ink-sunk px-2 py-0.5 font-bold">{r[4]}–{r[5]}</span>
+          <span className="num rounded bg-well px-2 py-0.5 font-bold">{r[4]}–{r[5]}</span>
           <span className={`truncate ${r[5] > r[4] ? "font-bold" : ""}`}>{r[3]}</span>
         </Link>
       ))}
@@ -120,12 +120,12 @@ function RatingsView({ lg }: { lg: League }) {
           ? "Attack is goals scored relative to the league average (above 1 is better); defence is goals conceded (below 1 is better). Recent games count more."
           : "Elo ratings: about 100 points is worth a 64% win chance on a neutral floor. They carry across seasons and, for the cups, across leagues."}
       </p>
-      <div className="panel divide-y divide-ink-line">
+      <div className="panel divide-y divide-line">
         {lg.ratings.map((r, i) => (
           <div key={r.team} className="grid grid-cols-[2rem_minmax(0,1fr)_minmax(0,1.2fr)] items-center gap-3 px-4 py-2.5 text-sm md:grid-cols-[2rem_minmax(0,1fr)_minmax(0,1.2fr)_auto]">
             <span className="num muted">{i + 1}</span>
             <span className="truncate font-semibold">{r.team}</span>
-            <span className="h-2 rounded-full bg-chalk-faint" style={{ width: `${8 + ((r.rating - min) / (max - min || 1)) * 92}%` }} />
+            <span className="h-2 rounded-full bg-ink-faint" style={{ width: `${8 + ((r.rating - min) / (max - min || 1)) * 92}%` }} />
             <span className="num hidden text-xs muted md:block">
               {poisson ? `attack ${r.attack?.toFixed(2)}, defence ${r.defence?.toFixed(2)}` : r.rating}
             </span>
@@ -147,10 +147,10 @@ function CheckView({ lg }: { lg: League }) {
           From {shortDate(c.from)}, the model predicted {c.matches} {lg.name} games using only what it knew before each one, refitting every week.
         </p>
         <dl className="mt-6 grid grid-cols-2 gap-6 md:grid-cols-4">
-          <div><dt className="text-xs muted">Favourite won</dt><dd className="wide num text-2xl font-bold">{pct(c.hitRate)}</dd></div>
-          <div><dt className="text-xs muted">Brier score</dt><dd className="wide num text-2xl font-bold text-won">{c.brier.toFixed(3)}</dd></div>
-          <div><dt className="text-xs muted">Baseline Brier</dt><dd className="wide num text-2xl font-bold muted">{c.baselineBrier.toFixed(3)}</dd></div>
-          <div><dt className="text-xs muted">Log loss</dt><dd className="wide num text-2xl font-bold">{c.logLoss.toFixed(3)}</dd></div>
+          <div><dt className="text-xs muted">Favourite won</dt><dd className="display num text-2xl font-bold">{pct(c.hitRate)}</dd></div>
+          <div><dt className="text-xs muted">Brier score</dt><dd className="display num text-2xl font-bold text-won">{c.brier.toFixed(3)}</dd></div>
+          <div><dt className="text-xs muted">Baseline Brier</dt><dd className="display num text-2xl font-bold muted">{c.baselineBrier.toFixed(3)}</dd></div>
+          <div><dt className="text-xs muted">Log loss</dt><dd className="display num text-2xl font-bold">{c.logLoss.toFixed(3)}</dd></div>
         </dl>
         <p className="mt-6 text-sm muted">
           Lower is better for both scores. The baseline knows only how often home wins, draws and away wins happen in this league.
@@ -162,16 +162,16 @@ function CheckView({ lg }: { lg: League }) {
         <svg viewBox={`0 0 ${W} ${W}`} className="mt-3 w-full" role="img" aria-label="Calibration: predicted probability against how often it happened">
           {[0, 0.25, 0.5, 0.75, 1].map((t) => (
             <g key={t}>
-              <line x1={X(t)} x2={X(t)} y1={Y(0)} y2={Y(1)} stroke="#24324D" />
-              <line x1={X(0)} x2={X(1)} y1={Y(t)} y2={Y(t)} stroke="#24324D" />
-              <text x={X(t)} y={W - 10} fontSize="10" fill="#5D6B84" textAnchor="middle">{t * 100}%</text>
-              <text x={8} y={Y(t) + 3} fontSize="10" fill="#5D6B84">{t * 100}%</text>
+              <line x1={X(t)} x2={X(t)} y1={Y(0)} y2={Y(1)} stroke="#D2DAD3" />
+              <line x1={X(0)} x2={X(1)} y1={Y(t)} y2={Y(t)} stroke="#D2DAD3" />
+              <text x={X(t)} y={W - 10} fontSize="10" fill="#8A988F" textAnchor="middle">{t * 100}%</text>
+              <text x={8} y={Y(t) + 3} fontSize="10" fill="#8A988F">{t * 100}%</text>
             </g>
           ))}
-          <line x1={X(0)} y1={Y(0)} x2={X(1)} y2={Y(1)} stroke="#8B98AE" strokeDasharray="3 4" />
-          {c.calibration.map((b) => <circle key={b.predicted} cx={X(b.predicted)} cy={Y(b.actual)} r={3 + Math.sqrt(b.n) / 3} fill="#F5B83D" fillOpacity="0.85" />)}
+          <line x1={X(0)} y1={Y(0)} x2={X(1)} y2={Y(1)} stroke="#55665C" strokeDasharray="3 4" />
+          {c.calibration.map((b) => <circle key={b.predicted} cx={X(b.predicted)} cy={Y(b.actual)} r={3 + Math.sqrt(b.n) / 3} fill="#0E6B43" fillOpacity="0.85" />)}
         </svg>
-        <p className="mt-2 text-xs text-chalk-faint">Dots on the dashed line mean the probabilities are honest. Bigger dots hold more predictions.</p>
+        <p className="mt-2 text-xs text-ink-faint">Dots on the dashed line mean the probabilities are honest. Bigger dots hold more predictions.</p>
       </div>
     </div>
   );

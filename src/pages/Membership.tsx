@@ -22,13 +22,13 @@ export default function Membership() {
 
       <div className="mt-10 grid gap-5 lg:grid-cols-3">
         {PLANS.map((p) => (
-          <div key={p.tier} className={`panel flex flex-col p-6 ${p.tier === "pro" ? "border-amber/60" : ""}`}>
-            <h2 className="wide text-xl font-bold">{p.name}</h2>
+          <div key={p.tier} className={`panel flex flex-col p-6 ${p.tier === "pro" ? "border-accent/60" : ""}`}>
+            <h2 className="display text-xl font-bold">{p.name}</h2>
             <p className="mt-1 text-sm muted">{p.price}</p>
             <ul className="mt-5 flex-1 space-y-2.5 text-sm">
-              {p.points.map((x) => <li key={x} className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-amber" />{x}</li>)}
+              {p.points.map((x) => <li key={x} className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-accent" />{x}</li>)}
             </ul>
-            {tier === p.tier && <p className="mt-5 text-sm font-semibold text-amber">Your plan</p>}
+            {tier === p.tier && <p className="mt-5 text-sm font-semibold text-accent">Your plan</p>}
             {p.tier === "pro" && tier !== "pro" && <p className="mt-5 text-sm muted">Pro payments open at launch.</p>}
           </div>
         ))}
@@ -40,10 +40,10 @@ export default function Membership() {
           <label className="mt-4 block text-sm">
             <span className="muted">Email</span>
             <input type="email" required value={value} onChange={(e) => setValue(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-ink-line bg-ink-sunk px-3 py-2 outline-none focus:border-amber" />
+              className="mt-1 w-full rounded-lg border border-line bg-well px-3 py-2 outline-none focus:border-accent" />
           </label>
           <label className="mt-3 flex items-start gap-2 text-sm">
-            <input type="checkbox" checked={age} onChange={(e) => setAge(e.target.checked)} className="mt-1 accent-amber" required />
+            <input type="checkbox" checked={age} onChange={(e) => setAge(e.target.checked)} className="mt-1 accent-accent" required />
             <span>I'm 18 or older, and I understand these are opinions, not guaranteed results.</span>
           </label>
           <button className="btn-primary mt-5" disabled={!age}>Join free</button>
@@ -53,7 +53,7 @@ export default function Membership() {
 
       <details className="mt-12 max-w-xl text-sm">
         <summary className="cursor-pointer muted">Preview the site as each plan</summary>
-        <p className="mt-2 text-xs text-chalk-faint">For the site owner, until real accounts and payments are connected.</p>
+        <p className="mt-2 text-xs text-ink-faint">For the site owner, until real accounts and payments are connected.</p>
         <div className="mt-3 flex gap-2">
           {(["visitor", "free", "pro"] as Tier[]).map((t) => (
             <button key={t} className={`chip ${tier === t ? "chip-on" : ""}`} onClick={() => setTier(t)}>{t[0].toUpperCase() + t.slice(1)}</button>

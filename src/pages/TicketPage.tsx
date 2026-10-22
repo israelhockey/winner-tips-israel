@@ -38,14 +38,14 @@ export default function TicketPage() {
       </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_340px] lg:items-start">
-        <ol className="panel divide-y divide-ink-line">
+        <ol className="panel divide-y divide-line">
           {sorted.map((l, i) => (
             <li key={l.key} className="grid grid-cols-[1.5rem_1fr_auto] items-center gap-3 px-4 py-4">
-              <span className="num text-sm text-chalk-faint">{i + 1}</span>
+              <span className="num text-sm text-ink-faint">{i + 1}</span>
               <div className="min-w-0">
-                <div className="text-xs text-chalk-faint">{dayLabel(l.kickoff)} {time(l.kickoff)}</div>
+                <div className="text-xs text-ink-faint">{dayLabel(l.kickoff)} {time(l.kickoff)}</div>
                 <div className="truncate font-semibold">{l.event}</div>
-                <div className="text-sm text-amber">{l.market}: {l.label}</div>
+                <div className="text-sm text-accent">{l.market}: {l.label}</div>
                 {l.modelP && <div className="num text-xs muted">Our chance {pct(l.modelP)}, fair {fair(l.modelP)}</div>}
               </div>
               <div className="flex items-center gap-2">
@@ -55,9 +55,9 @@ export default function TicketPage() {
                   placeholder="Odds"
                   defaultValue={l.odds ?? ""}
                   onChange={(e) => { const v = Number(e.target.value.replace(",", ".")); setOdds(l.key, v > 1 ? v : null); }}
-                  className="num w-20 rounded-lg border border-ink-line bg-ink-sunk px-2 py-1.5 text-sm outline-none focus:border-amber"
+                  className="num w-20 rounded-lg border border-line bg-well px-2 py-1.5 text-sm outline-none focus:border-accent"
                 />
-                <button className="rounded-lg p-2 text-chalk-faint hover:text-lost print:hidden" onClick={() => removeLeg(l.key)} aria-label={`Remove ${l.label}`}><Trash2 size={16} /></button>
+                <button className="rounded-lg p-2 text-ink-faint hover:text-lost print:hidden" onClick={() => removeLeg(l.key)} aria-label={`Remove ${l.label}`}><Trash2 size={16} /></button>
               </div>
             </li>
           ))}
@@ -66,19 +66,19 @@ export default function TicketPage() {
         <aside className="panel p-5 lg:sticky lg:top-32">
           <label className="block text-sm">
             <span className="muted">Stake (₪)</span>
-            <input inputMode="decimal" value={stake} onChange={(e) => setStake(e.target.value)} className="num mt-1 w-full rounded-lg border border-ink-line bg-ink-sunk px-3 py-2 text-lg outline-none focus:border-amber" />
+            <input inputMode="decimal" value={stake} onChange={(e) => setStake(e.target.value)} className="num mt-1 w-full rounded-lg border border-line bg-well px-3 py-2 text-lg outline-none focus:border-accent" />
           </label>
           <dl className="mt-5 space-y-3 text-sm">
             <div className="flex justify-between"><dt className="muted">Selections</dt><dd className="num font-semibold">{sorted.length}</dd></div>
             <div className="flex justify-between"><dt className="muted">Combined odds</dt><dd className="num font-semibold">{priced ? combined.toFixed(2) : "Add every leg's odds"}</dd></div>
-            <div className="flex justify-between"><dt className="muted">Potential return</dt><dd className="wide num text-xl font-bold">{priced ? `₪${(combined * s).toFixed(2)}` : "–"}</dd></div>
+            <div className="flex justify-between"><dt className="muted">Potential return</dt><dd className="display num text-xl font-bold">{priced ? `₪${(combined * s).toFixed(2)}` : "–"}</dd></div>
             {modelled && <div className="flex justify-between"><dt className="muted">Chance all legs win</dt><dd className="num font-semibold">{pct(pAll, 1)}</dd></div>}
             {modelled && priced && (
               <div className="flex justify-between"><dt className="muted">Value of the ticket</dt>
-                <dd className={`num font-semibold ${pAll * combined - 1 >= 0 ? "text-amber" : "text-lost"}`}>{signedPct(pAll * combined - 1)}</dd></div>
+                <dd className={`num font-semibold ${pAll * combined - 1 >= 0 ? "text-accent" : "text-lost"}`}>{signedPct(pAll * combined - 1)}</dd></div>
             )}
           </dl>
-          <p className="mt-5 border-t border-ink-line pt-4 text-xs text-chalk-faint">
+          <p className="mt-5 border-t border-line pt-4 text-xs text-ink-faint">
             Winner sets its own rules on how many games a ticket needs and which games can be combined; check the coupon before you play.
             Each extra leg multiplies the odds and the margin against you.
           </p>

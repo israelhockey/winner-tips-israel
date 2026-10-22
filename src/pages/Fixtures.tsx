@@ -48,7 +48,7 @@ export default function Fixtures() {
           </div>
         )}
       </div>
-      {meta && <p className="mt-4 text-xs text-chalk-faint">Data updated {ago(meta.fetchedAt)}</p>}
+      {meta && <p className="mt-4 text-xs text-ink-faint">Data updated {ago(meta.fetchedAt)}</p>}
 
       <div className="mt-8 space-y-8">
         {!index || (key !== "all" && !league) ? <Loading what="fixtures" /> : groups.length === 0 ? (

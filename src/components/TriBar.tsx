@@ -1,6 +1,6 @@
 import { fair, pct } from "@/lib/format";
 
-// The site's signature: one bar split into the three outcomes, each segment as wide as its
+// The site's signature: one bar split into the three outcomes, each segment as display as its
 // probability, with the fair odds underneath. Two segments for basketball (no draw).
 export function TriBar({ p, labels, compact = false, highlight }: {
   p: number[];
@@ -11,7 +11,7 @@ export function TriBar({ p, labels, compact = false, highlight }: {
   const names = labels ?? (p.length === 3 ? ["1", "X", "2"] : ["1", "2"]);
   const fav = p.indexOf(Math.max(...p));
   const tone = (i: number) =>
-    i === highlight ? "bg-amber" : i === fav ? "bg-chalk" : names[i] === "X" ? "bg-draw/60" : "bg-chalk-faint";
+    i === highlight ? "bg-accent" : i === fav ? "bg-ink" : names[i] === "X" ? "bg-draw/60" : "bg-ink-faint";
   return (
     <div className="w-full" aria-label={names.map((n, i) => `${n} ${pct(p[i])}`).join(", ")} role="img">
       <div className={`flex w-full gap-[3px] ${compact ? "h-2" : "h-3"}`}>
@@ -23,10 +23,10 @@ export function TriBar({ p, labels, compact = false, highlight }: {
         <div className="mt-1.5 flex w-full justify-between gap-2 text-xs num">
           {p.map((x, i) => (
             <span key={i} className={`whitespace-nowrap ${i === p.length - 1 ? "text-right" : i === 1 && p.length === 3 ? "text-center" : ""}`}>
-              <span className={i === highlight ? "text-amber font-semibold" : i === fav ? "text-chalk font-semibold" : "text-chalk-muted"}>
+              <span className={i === highlight ? "text-accent font-semibold" : i === fav ? "text-ink font-semibold" : "text-ink-muted"}>
                 {names[i]} {pct(x)}
               </span>
-              <span className="ml-1.5 text-chalk-faint" title="Fair odds">{fair(x)}</span>
+              <span className="ml-1.5 text-ink-faint" title="Fair odds">{fair(x)}</span>
             </span>
           ))}
         </div>

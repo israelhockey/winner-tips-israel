@@ -46,13 +46,13 @@ export default function Value() {
             ))}
           </div>
           {!index ? <Loading what="fixtures" /> : (
-            <div className="panel divide-y divide-ink-line">
+            <div className="panel divide-y divide-line">
               {matches.length === 0 && <p className="p-6 muted">No priced games in the next eight days for this league.</p>}
               {matches.map((m) => (
                 <div key={m.id} className="grid gap-3 px-4 py-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                   <div className="min-w-0">
-                    <div className="text-xs text-chalk-faint">{m.leagueName}, {dayLabel(m.kickoff)} {time(m.kickoff)}</div>
-                    <Link to={`/match/${m.league}/${m.id}`} className="font-semibold hover:text-amber">{m.home} v {m.away}</Link>
+                    <div className="text-xs text-ink-faint">{m.leagueName}, {dayLabel(m.kickoff)} {time(m.kickoff)}</div>
+                    <Link to={`/match/${m.league}/${m.id}`} className="font-semibold hover:text-accent">{m.home} v {m.away}</Link>
                   </div>
                   <div className="flex gap-2">
                     {outcomes(m).map(([sel, p]) => {
@@ -61,16 +61,16 @@ export default function Value() {
                       const e = o > 1 ? edge(p, o) : null;
                       return (
                         <label key={sel} className="flex w-[5.5rem] flex-col gap-1 text-xs">
-                          <span className="flex justify-between muted"><span className="font-bold text-chalk">{sel}</span><span className="num">fair {fair(p)}</span></span>
+                          <span className="flex justify-between muted"><span className="font-bold text-ink">{sel}</span><span className="num">fair {fair(p)}</span></span>
                           <input
                             inputMode="decimal"
                             placeholder="Winner"
                             value={odds[k] ?? ""}
                             onChange={(ev) => setOdds((x) => ({ ...x, [k]: ev.target.value.replace(",", ".") }))}
-                            className={`num w-full rounded-lg border bg-ink-sunk px-2 py-1.5 text-sm outline-none focus:border-amber ${e !== null && e >= THRESHOLD ? "border-amber text-amber" : "border-ink-line"}`}
+                            className={`num w-full rounded-lg border bg-well px-2 py-1.5 text-sm outline-none focus:border-accent ${e !== null && e >= THRESHOLD ? "border-accent text-accent" : "border-line"}`}
                             aria-label={`Winner odds for ${sel === "1" ? m.home : sel === "2" ? m.away : "draw"}`}
                           />
-                          <span className={`num h-4 ${e === null ? "" : e >= THRESHOLD ? "text-amber font-semibold" : e >= 0 ? "muted" : "text-chalk-faint"}`}>
+                          <span className={`num h-4 ${e === null ? "" : e >= THRESHOLD ? "text-accent font-semibold" : e >= 0 ? "muted" : "text-ink-faint"}`}>
                             {e === null ? "" : signedPct(e)}
                           </span>
                         </label>
@@ -88,16 +88,16 @@ export default function Value() {
           {flags.length === 0 ? (
             <p className="mt-2 text-sm muted">Nothing yet. A result shows here when Winner's odds beat our fair price by {pct(THRESHOLD)} or more.</p>
           ) : (
-            <ul className="mt-3 divide-y divide-ink-line">
+            <ul className="mt-3 divide-y divide-line">
               {flags.map((f) => (
                 <li key={`${f.m.id}${f.sel}`} className="py-3 text-sm">
-                  <div className="font-semibold">{f.sel === "1" ? f.m.home : f.sel === "2" ? f.m.away : "Draw"} <span className="text-chalk-faint font-normal">in {f.m.home} v {f.m.away}</span></div>
-                  <div className="num mt-0.5 muted">Winner {f.o.toFixed(2)}, fair {fair(f.p)}, <span className="font-semibold text-amber">{signedPct(f.e)} value</span></div>
+                  <div className="font-semibold">{f.sel === "1" ? f.m.home : f.sel === "2" ? f.m.away : "Draw"} <span className="text-ink-faint font-normal">in {f.m.home} v {f.m.away}</span></div>
+                  <div className="num mt-0.5 muted">Winner {f.o.toFixed(2)}, fair {fair(f.p)}, <span className="font-semibold text-accent">{signedPct(f.e)} value</span></div>
                 </li>
               ))}
             </ul>
           )}
-          <p className="mt-4 border-t border-ink-line pt-4 text-xs text-chalk-faint">
+          <p className="mt-4 border-t border-line pt-4 text-xs text-ink-faint">
             Value is the model's opinion, not a promise. Small edges on long odds lose often in the short run. Stake small and the same each time.
           </p>
         </aside>

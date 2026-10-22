@@ -4,7 +4,7 @@ import type { Pick } from "@/lib/types";
 import { dayLabel, time, units } from "@/lib/format";
 import { useApp } from "@/lib/state";
 
-const RESULT_TONE: Record<string, string> = { won: "text-won", lost: "text-lost", void: "text-draw", pending: "text-chalk-muted" };
+const RESULT_TONE: Record<string, string> = { won: "text-won", lost: "text-lost", void: "text-draw", pending: "text-ink-muted" };
 
 export function selectionText(p: Pick) {
   const [home, away] = p.event.split(" v ");
@@ -29,7 +29,7 @@ export function PickCard({ pick, locked }: { pick: Pick; locked: boolean }) {
       <h3 className="mt-2 text-lg font-bold">{pick.event}</h3>
 
       {locked ? (
-        <div className="mt-4 flex flex-1 flex-col justify-between gap-4 rounded-xl border border-dashed border-ink-line p-4">
+        <div className="mt-4 flex flex-1 flex-col justify-between gap-4 rounded-xl border border-dashed border-line p-4">
           <p className="flex items-center gap-2 text-sm muted"><Lock size={14} /> Pro pick, locked {dayLabel(pick.lockedAt)} at {time(pick.lockedAt)}</p>
           <Link to="/membership" className="btn-primary self-start">See Pro picks</Link>
         </div>
@@ -38,17 +38,17 @@ export function PickCard({ pick, locked }: { pick: Pick; locked: boolean }) {
           <div className="mt-4 flex items-end justify-between gap-3">
             <div>
               <div className="text-xs muted">{pick.market}</div>
-              <div className="font-semibold text-amber">{selectionText(pick)}</div>
+              <div className="font-semibold text-accent">{selectionText(pick)}</div>
             </div>
             <div className="text-right">
-              <div className="wide num text-2xl font-bold">{pick.odds.toFixed(2)}</div>
+              <div className="display num text-2xl font-bold">{pick.odds.toFixed(2)}</div>
               <div className="num text-xs muted">{pick.units}u stake</div>
             </div>
           </div>
-          <p className="mt-3 flex-1 text-sm leading-relaxed text-chalk/85">{pick.analysis}</p>
-          <div className="mt-4 flex items-center justify-between gap-3 border-t border-ink-line pt-3 text-xs">
+          <p className="mt-3 flex-1 text-sm leading-relaxed text-ink/85">{pick.analysis}</p>
+          <div className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-3 text-xs">
             <span className="muted">
-              <span className="tracking-widest text-amber" aria-label={`Confidence ${pick.confidence} of 3`}>{confidence}</span> {pick.tipster}
+              <span className="tracking-widest text-accent" aria-label={`Confidence ${pick.confidence} of 3`}>{confidence}</span> {pick.tipster}
             </span>
             {pick.result === "pending" ? (
               <button
