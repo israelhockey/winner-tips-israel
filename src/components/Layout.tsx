@@ -1,11 +1,12 @@
 import { useState, type ReactNode } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { BRAND } from "@/lib/config";
 import { useApp } from "@/lib/state";
 import { RecordStrip } from "./RecordStrip";
 
 const NAV = [
+  { to: "/matchday", label: "Matchday" },
   { to: "/picks", label: "Picks" },
   { to: "/fixtures", label: "Fixtures" },
   { to: "/value", label: "Value finder" },
@@ -40,10 +41,11 @@ function Logo({ onDark = false }: { onDark?: boolean }) {
 export function Layout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const { legs } = useApp();
+  const immersive = useLocation().pathname === "/matchday";
 
   return (
     <div className="flex min-h-screen flex-col overflow-x-clip">
-      <RecordStrip />
+      {!immersive && <RecordStrip />}
       <header className="sticky top-0 z-30 border-b border-line bg-paper/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-page items-center justify-between gap-6 px-4 md:px-6">
           <Logo />
@@ -77,9 +79,9 @@ export function Layout({ children }: { children: ReactNode }) {
         )}
       </header>
 
-      <main className="mx-auto w-full max-w-page flex-1 px-4 pb-24 pt-12 md:px-6">{children}</main>
+      {immersive ? <main className="flex-1">{children}</main> : <main className="mx-auto w-full max-w-page flex-1 px-4 pb-24 pt-12 md:px-6">{children}</main>}
 
-      <footer className="pitch-bg text-white/80">
+      {!immersive && <footer className="pitch-bg text-white/80">
         <div className="mx-auto grid max-w-page gap-10 px-4 py-14 text-sm md:grid-cols-[1.4fr_1fr_1fr] md:px-6">
           <div>
             <Logo onDark />
@@ -107,7 +109,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <div className="border-t border-white/10 py-4 text-center text-xs text-white/60">
           18+ only. Bet with money you can afford to lose. <Link to="/responsible-gambling" className="underline underline-offset-2 hover:text-white">Get help</Link>
         </div>
-      </footer>
+      </footer>}
     </div>
   );
 }

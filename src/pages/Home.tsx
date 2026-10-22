@@ -7,7 +7,7 @@ import { unlockedIds } from "@/lib/access";
 import { pct } from "@/lib/format";
 import { Board } from "@/components/Board";
 import { PickCard } from "@/components/PickCard";
-import { Coupon } from "@/components/Coupon";
+import { Stage, chances } from "@/components/Stage";
 import { Ticker } from "@/components/Ticker";
 import { HowToRead } from "@/components/HowToRead";
 import { ValueStrip } from "@/components/ValueStrip";
@@ -21,38 +21,42 @@ export default function Home() {
   const pending = record?.picks.filter((p) => p.result === "pending") ?? [];
   const open = record ? unlockedIds(record.picks, tier) : new Set<string>();
 
-  const israel = (index?.upcoming ?? []).filter((m) => m.league === "il-premier");
-  const couponGames = (israel.length >= 3 ? israel : index?.upcoming ?? []).slice(0, 6);
+  // Game of the day: the next Ligat Winner game, else the next big European one.
+  const soon = (index?.upcoming ?? []).filter((m) => chances(m) && Date.parse(m.kickoff) > Date.now() && Date.parse(m.kickoff) < Date.now() + 4 * 86400e3);
+  const gameOfDay = ["il-premier", "ucl", "uel", "epl", "laliga", "il-basket", "euroleague"]
+    .map((k) => soon.filter((m) => m.league === k).sort((a, b) => (b.winner ? 1 : 0) - (a.winner ? 1 : 0))[0]).find(Boolean) ?? soon[0];
   const checked = (index?.leagues ?? []).filter((l) => l.check)
     .sort((a, b) => (b.check!.baselineBrier - b.check!.brier) - (a.check!.baselineBrier - a.check!.brier));
 
   return (
     <>
-      {/* Hero: the pitch, and this week's coupon */}
-      <section className="pitch-bg bleed relative -mt-12 overflow-hidden text-white">
-        <PitchLines />
-        <div className="relative mx-auto grid max-w-page grid-cols-1 items-center gap-12 px-4 py-14 md:px-6 lg:grid-cols-[1.1fr_1fr] lg:py-20">
-          <div className="min-w-0">
-            <p className="font-display text-lg font-bold text-marker">Ligat Winner to the Champions League</p>
-            <h1 className="mt-3 font-display text-[3.4rem] font-extrabold leading-[0.92] sm:text-[4.6rem] lg:text-[5.6rem]">
-              Every game on the Winner coupon, priced in English.
-            </h1>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/80">
-              Our model puts a fair price on every result. Our tipsters mark the ones worth playing, and every pick stays on a public record, won or lost.
+      {/* Hero: the game of the day, full stage */}
+      <div className="bleed -mt-12">
+        {gameOfDay ? (
+          <Stage m={gameOfDay} active className="min-h-[calc(100svh-6.5rem)]">
+            <div className="relative mx-auto mt-6 w-full max-w-page px-4 text-white md:px-8">
+              <p className="font-display text-sm font-bold uppercase tracking-[0.25em] text-white/80">Game of the day</p>
+            </div>
+          </Stage>
+        ) : <div className="h-[70svh] bg-ink" />}
+      </div>
+      <section className="bleed bg-ink text-white">
+        <div className="mx-auto grid max-w-page items-end gap-10 px-4 py-14 md:px-6 lg:grid-cols-[1.3fr_1fr]">
+          <div>
+            <h1 className="font-display text-[3rem] font-extrabold leading-[0.9] sm:text-7xl">Every game on the Winner coupon, <span className="text-marker">priced in English.</span></h1>
+            <p className="mt-5 max-w-xl text-lg text-white/70">
+              Our model puts a fair price on every result and checks it against Winner's odds. Our tipsters mark the ones worth playing, and every pick stays on a public record.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/picks" className="btn-marker px-5 py-3 text-base">See this week's picks</Link>
-              <Link to="/membership" className="btn border border-white/40 px-5 py-3 text-base text-white hover:bg-white/10">Join free</Link>
+              <Link to="/matchday" className="btn-marker px-6 py-3.5 text-base">Play matchday</Link>
+              <Link to="/value" className="btn border border-white/35 px-5 py-3.5 text-base text-white hover:bg-white/10">Value finder</Link>
             </div>
-            <dl className="mt-12 grid max-w-md grid-cols-3 gap-6">
-              <Fig n={index?.leagues.length} label="leagues covered" />
-              <Fig n={index?.upcoming.length} label="games this week" />
-              <Fig n={FREE_PICKS_PER_WEEK} label="free Pro picks a week" />
-            </dl>
           </div>
-          <div className="flex min-w-0 justify-center px-1 lg:justify-end">
-            {couponGames.length ? <Coupon title={israel.length >= 3 ? "Ligat Winner coupon" : "This week's coupon"} matches={couponGames} /> : <div className="h-96" />}
-          </div>
+          <dl className="grid grid-cols-3 gap-6">
+            <Fig n={index?.leagues.length} label="leagues covered" />
+            <Fig n={index?.upcoming.length} label="games this week" />
+            <Fig n={FREE_PICKS_PER_WEEK} label="free Pro picks a week" />
+          </dl>
         </div>
       </section>
       {index && <Ticker matches={index.upcoming} />}

@@ -20,6 +20,7 @@ import Membership from "@/pages/Membership";
 import Responsible from "@/pages/Responsible";
 import HowItWorks from "@/pages/HowItWorks";
 import Guide from "@/pages/Guide";
+import Matchday from "@/pages/Matchday";
 
 function ScrollTop() {
   const { pathname } = useLocation();
@@ -47,6 +48,7 @@ export default function App() {
               <Route path="/responsible-gambling" element={<Responsible />} />
               <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="/guide" element={<Guide />} />
+              <Route path="/matchday" element={<Matchday />} />
               <Route path="*" element={<Empty title="That page doesn't exist"><Link to="/" className="underline">Go to the home page</Link></Empty>} />
             </Routes>
         </Layout>
