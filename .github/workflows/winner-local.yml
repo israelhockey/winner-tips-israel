@@ -36,17 +36,28 @@ jobs:
       - name: Fetch Winner odds
         timeout-minutes: 5
         run: node scripts/fetch-winner.mjs
-      - name: Re-price and update the model picks
-        run: node scripts/build-model.mjs
-      - name: Publish
+      - name: Re-price and publish
         run: |
           $ErrorActionPreference = "Continue"  # git writes progress to stderr; judge by exit codes
           git config user.name "data-bot"
           git config user.email "data-bot@users.noreply.github.com"
-          git add data/raw data/ledger public/data
-          git diff --cached --quiet
-          if ($LASTEXITCODE -eq 0) { Write-Output "No changes"; exit 0 }
-          git commit -m "Refresh Winner odds"
-          git pull --rebase origin main
-          git push
-          if ($LASTEXITCODE -ne 0) { exit 1 }
+          # Other updates commit the same generated files, so always start from the latest version
+          # online, put back the odds just fetched, re-price, and publish. Retry if someone beat us to it.
+          Copy-Item data/raw/winner.json $env:RUNNER_TEMP/winner.json -ErrorAction SilentlyContinue
+          Copy-Item data/raw/winner-status.json $env:RUNNER_TEMP/winner-status.json -ErrorAction SilentlyContinue
+          for ($i = 1; $i -le 3; $i++) {
+            git fetch origin main
+            git reset --hard origin/main
+            Copy-Item $env:RUNNER_TEMP/winner.json data/raw/winner.json -ErrorAction SilentlyContinue
+            Copy-Item $env:RUNNER_TEMP/winner-status.json data/raw/winner-status.json -ErrorAction SilentlyContinue
+            node scripts/build-model.mjs
+            if ($LASTEXITCODE -ne 0) { exit 1 }
+            git add data/raw data/ledger public/data
+            git diff --cached --quiet
+            if ($LASTEXITCODE -eq 0) { Write-Output "No changes"; exit 0 }
+            git commit -m "Refresh Winner odds"
+            git push origin HEAD:main
+            if ($LASTEXITCODE -eq 0) { exit 0 }
+            Write-Output "Push lost a race; trying again"
+          }
+          exit 1
