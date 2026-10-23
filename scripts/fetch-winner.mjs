@@ -61,8 +61,12 @@ async function main() {
 }
 async function fetchInBrowser() {
   const { chromium } = await import("playwright-core");
-  // GitHub's runners come with Google Chrome; use it rather than downloading a browser.
-  const browser = await chromium.launch({ channel: "chrome", headless: true, args: ["--disable-blink-features=AutomationControlled"] });
+  // Use a browser that's already installed: Chrome where there is one, else Edge (every Windows PC).
+  let browser;
+  for (const channel of ["chrome", "msedge"]) {
+    try { browser = await chromium.launch({ channel, headless: true, args: ["--disable-blink-features=AutomationControlled"] }); break; } catch { /* try the next */ }
+  }
+  if (!browser) throw new Error("no Chrome or Edge on this machine");
   try {
     const page = await browser.newPage({
       locale: "he-IL", timezoneId: "Asia/Jerusalem",

@@ -1,11 +1,12 @@
-name: Refresh Winner odds
+name: Winner odds (home connection)
 
-# Between the full data refreshes: re-read Winner's odds, re-price, log any new model picks
-# and record the latest price on picks before kickoff (their closing price). Quick: no
-# fixtures are fetched.
+# Winner's site turns away data-centre servers, so this job runs on a self-hosted runner on an
+# ordinary home connection in Israel. Every two hours it reads Winner's odds, re-prices every
+# game, logs any new model picks and records closing prices, then publishes.
+# If the machine is off, the job simply waits and the site keeps the last odds it had.
 on:
   schedule:
-    - cron: "47 1-23/2 * * *" # every two hours, in between the full refreshes
+    - cron: "23 */2 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -17,7 +18,7 @@ permissions:
 
 jobs:
   odds:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -25,14 +26,14 @@ jobs:
         with:
           node-version: 22
       - name: Fetch Winner odds
-        continue-on-error: true
         timeout-minutes: 5
         run: |
           npm install --no-save --no-audit --no-fund playwright-core@1.48.2
           node scripts/fetch-winner.mjs
       - name: Re-price and update the model picks
         run: node scripts/build-model.mjs
-      - name: Commit
+      - name: Publish
+        shell: bash
         run: |
           git config user.name "data-bot"
           git config user.email "data-bot@users.noreply.github.com"

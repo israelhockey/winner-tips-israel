@@ -45,12 +45,6 @@ jobs:
         continue-on-error: true
         timeout-minutes: 6
         run: node scripts/fetch-teams.mjs
-      - name: Fetch Winner odds
-        continue-on-error: true
-        timeout-minutes: 5
-        run: |
-          npm install --no-save --no-audit --no-fund playwright-core@1.48.2
-          node scripts/fetch-winner.mjs
       - name: Build model, tables and picks ledger
         if: always()
         run: node scripts/build-model.mjs
