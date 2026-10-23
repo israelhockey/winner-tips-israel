@@ -30,6 +30,8 @@ jobs:
       # Node and Git are installed on the machine once (winget), so nothing big downloads each run.
       - name: Check tools
         run: |
+          # A runner started before Git was installed doesn't have it on its PATH yet.
+          foreach ($d in "C:\Program Files\Git\cmd", "C:\Program Files\nodejs") { if (Test-Path $d) { $d | Out-File -Append -Encoding utf8 $env:GITHUB_PATH; $env:PATH = "$d;$env:PATH" } }
           node --version
           git --version
       - name: Fetch Winner odds
