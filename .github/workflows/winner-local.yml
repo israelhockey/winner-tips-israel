@@ -15,7 +15,7 @@ on:
       - "scripts/fetch-winner.mjs"
 
 concurrency:
-  group: data
+  group: winner-odds
   cancel-in-progress: false
 
 permissions:
