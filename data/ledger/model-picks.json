@@ -19,8 +19,32 @@
   "tipster": "Line Up model",
   "analysis": "Winner pays 4.40. We make it 26%, a fair price of 3.86: 14% more than it's worth.",
   "closingOdds": 4.4,
-  "closingSeenAt": "2026-10-23T14:47:52.305Z",
+  "closingSeenAt": "2026-10-23T22:27:19.533Z",
   "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
   "hash": "d4bd8ed466078f2aaee0f49ae77cb11dabc04f08f6fe05c4fe70b584df7c3e50"
+ },
+ {
+  "id": "M-20261023-02",
+  "lockedAt": "2026-10-23T22:27:19.533Z",
+  "matchId": "espn-401909843",
+  "league": "nba",
+  "event": "Charlotte Hornets v Atlanta Hawks",
+  "kickoff": "2026-10-23T23:00:00.000Z",
+  "market": "Winner",
+  "line": null,
+  "selection": "1",
+  "label": "Charlotte Hornets",
+  "odds": 2,
+  "p": 0.533,
+  "units": 1,
+  "edge": 0.065,
+  "confidence": 1,
+  "tier": "free",
+  "tipster": "Line Up model",
+  "analysis": "Winner pays 2.00. We make it 53%, a fair price of 1.88: 7% more than it's worth.",
+  "closingOdds": 2,
+  "closingSeenAt": "2026-10-23T22:27:19.533Z",
+  "prevHash": "d4bd8ed466078f2aaee0f49ae77cb11dabc04f08f6fe05c4fe70b584df7c3e50",
+  "hash": "4e5edd683553b1b9850c3df12c58714dd47703e5fe31d7527190dbc1ef9a4a24"
  }
 ]
