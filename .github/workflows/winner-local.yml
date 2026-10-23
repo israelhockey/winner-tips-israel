@@ -26,19 +26,16 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      # Node and Git are installed on the machine once (winget), so nothing big downloads each run.
       - name: Check tools
         run: |
           # A runner started before Git was installed doesn't have it on its PATH yet.
           foreach ($d in "C:\Program Files\Git\cmd", "C:\Program Files\nodejs") { if (Test-Path $d) { $d | Out-File -Append -Encoding utf8 $env:GITHUB_PATH; $env:PATH = "$d;$env:PATH" } }
           node --version
           git --version
+      - uses: actions/checkout@v4
       - name: Fetch Winner odds
         timeout-minutes: 5
-        run: |
-          npm install --no-save --no-audit --no-fund playwright-core@1.48.2
-          node scripts/fetch-winner.mjs
+        run: node scripts/fetch-winner.mjs
       - name: Re-price and update the model picks
         run: node scripts/build-model.mjs
       - name: Publish
