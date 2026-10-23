@@ -32,7 +32,7 @@ function ScrollTop() {
 export default function App() {
   return (
     <AppProvider>
-      <Router>
+      <Router basename={import.meta.env.VITE_PREVIEW ? undefined : import.meta.env.BASE_URL.replace(/\/$/, "") || undefined}>
         <ScrollTop />
         <Layout>
             <Routes>

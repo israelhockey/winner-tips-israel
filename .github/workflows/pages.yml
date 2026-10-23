@@ -1,0 +1,53 @@
+name: Publish site
+
+# Builds the site and publishes it to GitHub Pages: after any code change, and after every data
+# or Winner odds update (those commit with the workflow token, which doesn't fire push events).
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: ["Refresh league data", "Winner odds (home connection)"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main # the latest commit, including data the update just pushed
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build
+        env:
+          PAGES_BASE: /winner-tips-israel/
+        run: |
+          npx tsc -b
+          npx vite build --base "$PAGES_BASE"
+          cp dist/index.html dist/404.html   # deep links like /value load the app, which routes them
+          touch dist/.nojekyll
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
