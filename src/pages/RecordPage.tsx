@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { ShieldCheck } from "lucide-react";
 import { Loading, Stat, Section } from "@/components/bits";
 import { PageHero } from "@/components/PageHero";
+import { Scorecards } from "@/components/Scorecards";
 import type { PicksRecord } from "@/lib/types";
 
 // The full, unedited ledger. Free and Pro picks together, so nothing can be cherry-picked.
@@ -39,6 +40,9 @@ export default function RecordPage() {
         <Explain title="Why it matters">Wins and losses swing on luck for months. Beating the closing price, again and again, is the clearest sign a tipster has real skill.</Explain>
       </div>
 
+      <Scorecards sealed={s} />
+
+      <h2 id="every-pick" className="h2 mt-14 scroll-mt-24">Sealed value picks</h2>
       {s.picks === 0 ? (
         <div className="mt-8 panel px-6 py-10">
           <p className="h3">The record starts with the first pick</p>

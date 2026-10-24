@@ -45,3 +45,11 @@ export function logoSrc(url: string, px: number) {
   if (url.includes("thesportsdb.com")) return `${url}/${want <= 64 ? "tiny" : "small"}`;
   return url;
 }
+
+export interface TrackRow { event: string; league: string; kickoff: string; label: string; market: string; p: number; odds: number | null; winnerLabel?: string; result: "won" | "lost" | "void" | "pending"; profit: number | null; final: string | null }
+export interface Track {
+  key: string; name: string; desc: string;
+  summary: { calls: number; graded: number; pending: number; won: number; hitRate: number | null; expectedHits: number; staked: number; units: number; roi: number | null; last10: ("W" | "L")[] };
+  recent: TrackRow[];
+}
+export const useTracks = () => useJson<{ updatedAt: string; since: string | null; tracks: Track[] }>(`${BASE}data/tracks.json`);

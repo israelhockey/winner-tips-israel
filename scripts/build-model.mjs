@@ -17,6 +17,7 @@ import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { LEAGUES } from "./leagues.mjs";
 import { matchEvents } from "./winner-match.mjs";
 import { updateLedger, verifyChain } from "./ledger.mjs";
+import { updateTracks, scoreTracks } from "./tracks.mjs";
 
 const RAW = new URL("../data/raw/", import.meta.url);
 const OUT = new URL("../public/data/", import.meta.url);
@@ -605,6 +606,12 @@ index.winner = winnerRaw ? { fetchedAt: winnerRaw.fetchedAt, games: index.upcomi
 const picks = (await load(PICKS)) || [];
 const leagueName = Object.fromEntries(LEAGUES.map((l) => [l.key, l.name]));
 
+const allUpcoming = [];
+for (const lg of LEAGUES) {
+  const out = await load(new URL(`leagues/${lg.key}.json`, OUT));
+  if (out) for (const m of out.upcoming) allUpcoming.push({ ...m, league: lg.key, sport: lg.sport });
+}
+
 // The model's own picks, logged automatically. Only with fresh Winner odds (under 2 hours old),
 // and never if the existing chain doesn't verify: a broken chain needs a human to look at it.
 const LEDGER = new URL("../data/ledger/model-picks.json", import.meta.url);
@@ -615,11 +622,6 @@ if (broken >= 0) {
   console.log(`LEDGER CHAIN BROKEN at pick ${broken} (${ledger[broken]?.id}); not adding picks`);
 } else {
   const fresh = winnerRaw && NOW - Date.parse(winnerRaw.fetchedAt) < 2 * 3600e3;
-  const allUpcoming = [];
-  for (const lg of LEAGUES) {
-    const out = await load(new URL(`leagues/${lg.key}.json`, OUT));
-    if (out) for (const m of out.upcoming) allUpcoming.push({ ...m, league: lg.key, sport: lg.sport });
-  }
   if (fresh) {
     const { picks: next, added } = updateLedger(ledger, allUpcoming, new Date(NOW).toISOString(), VALUE_EDGE);
     ledger = next;
@@ -628,6 +630,14 @@ if (broken >= 0) {
   await writeFile(LEDGER, JSON.stringify(ledger, null, 1));
 }
 await writeFile(new URL("ledger.json", OUT), JSON.stringify(ledger.map(({ analysis, ...p }) => p)));
+// Tracks: every game's calls, refreshed until kickoff, then frozen and graded.
+const TRACKS_FILE = new URL("../data/ledger/tracks.json", import.meta.url);
+const trackEntries = updateTracks((await load(TRACKS_FILE)) || [], allUpcoming, new Date(NOW).toISOString());
+await writeFile(TRACKS_FILE, JSON.stringify(trackEntries));
+const tracks = scoreTracks(trackEntries, matchById, grade, leagueName, new Date(NOW).toISOString());
+await writeFile(new URL("tracks.json", OUT), JSON.stringify({ updatedAt: new Date(NOW).toISOString(), since: trackEntries[0]?.kickoff ?? null, tracks }));
+console.log(`Tracks: ${trackEntries.length} games logged; ` + tracks.map((t) => `${t.key} ${t.summary.won}/${t.summary.graded}`).join(", "));
+
 const record = buildRecord([...picks, ...ledger].map((p) => ({ ...p, leagueName: leagueName[p.league] || p.league })), matchById);
 index.record = record.summary;
 await writeFile(new URL("record.json", OUT), JSON.stringify(record));
