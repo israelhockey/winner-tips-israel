@@ -6,7 +6,7 @@ name: Winner odds (home connection)
 # If the machine is off, the job simply waits and the site keeps the last odds it had.
 on:
   schedule:
-    - cron: "23 */2 * * *"
+    - cron: "23 * * * *" # hourly: GitHub often delays or skips scheduled runs, and runs on the home machine cost nothing
   workflow_dispatch:
   push:
     branches: [main]
