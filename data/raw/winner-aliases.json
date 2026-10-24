@@ -33,7 +33,11 @@
   "לאציו": "SS Lazio",
   "פארמה": "Parma Calcio 1913",
   "נאפולי": "SSC Napoli",
-  "רומא": "AS Roma"
+  "רומא": "AS Roma",
+  "בולוניה": "Bologna FC 1909",
+  "קליארי": "Cagliari Calcio",
+  "קומו": "Como 1907",
+  "ססואולו": "US Sassuolo Calcio"
  },
  "epl": {
   "מנצ'סטר יונייטד": "Manchester United",
@@ -99,7 +103,21 @@
   "פאריס": "Paris Basketball",
   "ולנסיה": "Valencia Basket",
   "אולימפיאקוס": "Olympiacos",
-  "פנרבחצ'ה אולקר": "Fenerbahçe Basketbol"
+  "פנרבחצ'ה אולקר": "Fenerbahçe Basketbol",
+  "הכוכב האדום": "KK Crvena zvezda",
+  "מכבי תל אביב": "Maccabi Tel Aviv",
+  "בי.סי. דובאי": "Dubai Basketball",
+  "פנאתינייקוס": "Panathinaikos",
+  "אולימפיה מילאנו": "Olimpia Milano",
+  "ביירן מינכן": "Bayern München Basketball",
+  "ברצלונה": "Barcelona Basquet",
+  "הפועל תל אביב": "Hapoel Tel Aviv",
+  "אנאדולו אפס": "Anadolu Efes SK",
+  "בסקוניה": "Baskonia",
+  "ריאל מדריד": "Real Madrid Baloncesto",
+  "פרטיזן בלגרד": "KK Partizan",
+  "בשיקטאש": "Besiktas Basketbol",
+  "וירטוס בולוניה": "Virtus Pallacanestro Bologna"
  },
  "primeira": {
   "אלברקה": "Alverca",
@@ -117,7 +135,9 @@
   "ספורטינג ליסבון": "Sporting Clube de Portugal",
   "אקדמיקה ויסו": "Académico de Viseu",
   "ויטוריה גימראייש": "Vitória Guimarães",
-  "מריטימו": "CS Marítimo"
+  "מריטימו": "CS Marítimo",
+  "סנטה קלרה אזורס": "CD Santa Clara",
+  "בנפיקה ליסבון": "Sport Lisboa e Benfica"
  },
  "nba": {
   "בוסטון סלטיקס": "Boston Celtics",
