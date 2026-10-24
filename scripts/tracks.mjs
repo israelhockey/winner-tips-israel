@@ -60,6 +60,8 @@ function calls(m) {
   return out;
 }
 
+import { probeFor } from "./tuning.mjs";
+
 // entries: [{ matchId, league, event, kickoff, lockedAt, calls: [...] }]
 export function updateTracks(entries, upcoming, now) {
   const t = Date.parse(now);
@@ -68,7 +70,7 @@ export function updateTracks(entries, upcoming, now) {
     if (Date.parse(m.kickoff) <= t) continue; // started: frozen
     const c = calls(m);
     if (!c.length) continue;
-    byId.set(m.id, { matchId: m.id, league: m.league, sport: m.sport, event: `${m.home} v ${m.away}`, kickoff: m.kickoff, lockedAt: now, calls: c });
+    byId.set(m.id, { matchId: m.id, league: m.league, sport: m.sport, event: `${m.home} v ${m.away}`, kickoff: m.kickoff, lockedAt: now, calls: c, probe: probeFor(m, byId.get(m.id)?.probe) });
   }
   return [...byId.values()].sort((a, b) => a.kickoff.localeCompare(b.kickoff));
 }

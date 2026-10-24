@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import { useTuning } from "@/lib/data";
+import { shortDate } from "@/lib/format";
 
 export default function HowItWorks() {
   return (
@@ -46,13 +48,64 @@ export default function HowItWorks() {
         <Link to="/record" className="underline underline-offset-2">public record</Link>.
       </p>
 
+      <Learning />
+
       <h2 className="h2 mt-10">Where the data comes from</h2>
       <p className="mt-4 text-ink/85">
         Fixtures and results for the big European leagues come from{" "}
         <a className="underline underline-offset-2" href="https://github.com/openfootball/football.json">openfootball</a>, a public-domain project.
         Ligat Winner, Israeli basketball and EuroLeague come from <a className="underline underline-offset-2" href="https://www.thesportsdb.com">TheSportsDB</a>,
-        and the European cups and NBA from ESPN's public scoreboards. Everything refreshes every three hours.
+        and the European cups and NBA from ESPN's public scoreboards. Everything refreshes every three hours, and Winner's odds every hour.
       </p>
     </article>
+  );
+}
+
+// How the model learns, with its public change log.
+function Learning() {
+  const { data: t } = useTuning();
+  const log = (t?.history ?? []).filter((h) => h.changes.length).slice().reverse();
+  return (
+    <>
+      <h2 className="h2 mt-10">How the model learns</h2>
+      <p className="mt-4 text-ink/85">
+        Team ratings update after every game. On top of that, once a week the model checks its own settings against every game it has
+        called and graded, and keeps whatever would have predicted best:
+      </p>
+      <ul className="mt-3 list-disc space-y-1.5 pl-5 text-ink/85">
+        <li><b>Its settings:</b> how fast old games fade, and how much say it gets against Winner's own prices.</li>
+        <li><b>Its confidence:</b> if games we call 70% only land 62% of the time, it tones that kind of call down (and the other way round).</li>
+        <li><b>Winner's moves:</b> in leagues where Winner's prices tend to move towards our numbers before kickoff, the model gets more weight; where they move away, less.</li>
+      </ul>
+      {t && (
+        <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Setting label="Model's share vs Winner" value={`${Math.round(t.modelWeight * 100)}%`} />
+          <Setting label="Old games fade by half every" value={`${t.halfLife} days`} />
+          <Setting label="Confidence, football" value={t.temperature.football === 1 ? "as is" : t.temperature.football > 1 ? `toned down ×${t.temperature.football}` : `sharpened ×${t.temperature.football}`} />
+          <Setting label="Confidence, basketball" value={t.temperature.basketball === 1 ? "as is" : t.temperature.basketball > 1 ? `toned down ×${t.temperature.basketball}` : `sharpened ×${t.temperature.basketball}`} />
+        </div>
+      )}
+      <div className="mt-4 rounded-card border border-line bg-card p-4 text-sm">
+        <div className="font-semibold">Change log</div>
+        {log.length === 0 ? (
+          <p className="mt-1 text-ink-muted">No changes yet. The model needs about 150 graded games before it adjusts anything{t?.updatedAt ? `; last check ${shortDate(t.updatedAt)}` : ""}.</p>
+        ) : (
+          <ul className="mt-2 space-y-1.5">
+            {log.flatMap((h) => h.changes.map((c, i) => (
+              <li key={h.at + i} className="text-ink-muted"><span className="num text-ink">{shortDate(h.at)}</span> · {c.setting}: {String(c.from)} → <b className="text-ink">{String(c.to)}</b> ({c.why}{c.games ? `, ${c.games} games` : ""})</li>
+            )))}
+          </ul>
+        )}
+      </div>
+    </>
+  );
+}
+
+function Setting({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-card border border-line bg-card p-3">
+      <div className="text-xs text-ink-muted">{label}</div>
+      <div className="mt-1 font-display text-xl font-extrabold">{value}</div>
+    </div>
   );
 }

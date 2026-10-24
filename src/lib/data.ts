@@ -53,3 +53,9 @@ export interface Track {
   recent: TrackRow[];
 }
 export const useTracks = () => useJson<{ updatedAt: string; since: string | null; tracks: Track[] }>(`${BASE}data/tracks.json`);
+
+export interface Tuning {
+  modelWeight: number; halfLife: number; temperature: { football: number; basketball: number }; leagueWeight: Record<string, number>; updatedAt: string | null;
+  history: { at: string; samples: number; changes: { setting: string; from: string | number; to: string | number; games: number | null; why: string }[] }[];
+}
+export const useTuning = () => useJson<Tuning>(`${BASE}data/tuning.json`);

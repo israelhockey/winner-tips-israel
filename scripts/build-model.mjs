@@ -18,6 +18,7 @@ import { LEAGUES } from "./leagues.mjs";
 import { matchEvents } from "./winner-match.mjs";
 import { updateLedger, verifyChain } from "./ledger.mjs";
 import { updateTracks, scoreTracks } from "./tracks.mjs";
+import { maybeTune, temper, DEFAULTS as TUNING_DEFAULTS } from "./tuning.mjs";
 
 const RAW = new URL("../data/raw/", import.meta.url);
 const OUT = new URL("../public/data/", import.meta.url);
@@ -39,14 +40,17 @@ const normName = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
 // ---------------------------------------------------------------------------------------------
 
 const RHO = -0.08; // Dixon-Coles correction: slightly more 0-0 and 1-1, fewer 1-0 and 0-1
-const HALF_LIFE_DAYS = 180;
+// Self-tuned settings (scripts/tuning.mjs), re-checked weekly against graded games.
+const TUNING_FILE = new URL("../data/ledger/tuning.json", import.meta.url);
+const TUNING = { ...TUNING_DEFAULTS, ...((await load(TUNING_FILE)) || {}) };
+const HALF_LIFE_DAYS = TUNING.halfLife;
 const PRIOR_GAMES = 4; // shrinkage: each team starts with 4 "average" games
 
-function fitPoisson(matches, asOf) {
+function fitPoisson(matches, asOf, halfLife = HALF_LIFE_DAYS) {
   const played = matches.filter((m) => m.status === "FT" && Date.parse(m.kickoff) < asOf && asOf - Date.parse(m.kickoff) < 450 * DAY);
   const teams = [...new Set(played.flatMap((m) => [m.home, m.away]))];
   if (played.length < 20) return null;
-  const xi = Math.log(2) / (HALF_LIFE_DAYS * DAY);
+  const xi = Math.log(2) / (halfLife * DAY);
   const rows = played.map((m) => ({ h: m.home, a: m.away, hs: m.hs, as: m.as, w: Math.exp(-xi * (asOf - Date.parse(m.kickoff))) }));
   const W = rows.reduce((s, r) => s + r.w, 0);
   const avgH = rows.reduce((s, r) => s + r.w * r.hs, 0) / W;
@@ -273,7 +277,7 @@ function backtestBasketball(matches, key) {
   };
 }
 
-function backtestFootball(matches) {
+function backtestFootball(matches, halfLife = HALF_LIFE_DAYS) {
   const done = matches.filter((m) => m.status === "FT").sort((a, b) => a.kickoff.localeCompare(b.kickoff));
   if (done.length < 150) return null;
   const start = Date.parse(done[Math.floor(done.length * 0.35)].kickoff);
@@ -283,7 +287,7 @@ function backtestFootball(matches) {
   for (const m of done) {
     const t = Date.parse(m.kickoff);
     if (t < start) continue;
-    if (!model || t - fittedAt > 7 * DAY) { model = fitPoisson(done, t); fittedAt = t; }
+    if (!model || t - fittedAt > 7 * DAY) { model = fitPoisson(done, t, halfLife); fittedAt = t; }
     if (!model) continue;
     const prior = done.filter((x) => Date.parse(x.kickoff) < t);
     const base = ["1", "X", "2"].map((k) => prior.filter((x) => (k === "1" ? x.hs > x.as : k === "X" ? x.hs === x.as : x.hs < x.as)).length / prior.length);
@@ -373,7 +377,9 @@ function buildRecord(picks, matchById) {
 // Winner odds: blend and value
 // ---------------------------------------------------------------------------------------------
 
-const MODEL_WEIGHT = 0.35; // the rest goes to Winner's margin-free prices, which know about team news
+// The model's share of the blend (the rest is Winner's margin-free prices, which know about team
+// news). Self-tuned, and per league once the market's moves show where the model adds most.
+const weightFor = (league) => TUNING.leagueWeight?.[league] ?? TUNING.modelWeight;
 const VALUE_EDGE = 0.05;
 
 // Normal CDF (Abramowitz-Stegun), for basketball margins and totals.
@@ -386,12 +392,14 @@ function Phi(x) {
 const fairOf = (odds) => { const inv = odds.map((o) => 1 / o); const s = inv.reduce((a, b) => a + b, 0); return inv.map((x) => x / s); };
 const signed = (x) => (x > 0 ? `+${x}` : `${x}`);
 
-function winnerMarkets(m, ev, sport, sd) {
+function winnerMarkets(m, ev, sport, sd, MODEL_WEIGHT) {
+  const T = TUNING.temperature?.[sport] ?? 1;
   const out = [];
   const add = (market, line, sels, labels, modelP, odds) => {
     if (!odds || odds.length !== modelP.length || odds.some((o) => !(o > 1))) return;
     const fair = fairOf(odds);
-    const p = modelP.map((x, i) => MODEL_WEIGHT * x + (1 - MODEL_WEIGHT) * fair[i]);
+    const tempered = temper(modelP, T);
+    const p = tempered.map((x, i) => MODEL_WEIGHT * x + (1 - MODEL_WEIGHT) * fair[i]);
     out.push({
       market, line, sels, labels, odds,
       p: p.map((x) => round(x)), model: modelP.map((x) => round(x)), fair: fair.map((x) => round(x)),
@@ -437,11 +445,12 @@ function winnerMarkets(m, ev, sport, sd) {
 // Attach Winner's prices to a fixture. The coupon boxes then show the blended chance and
 // Winner's odds; basketball games Winner only offers on a handicap get a blended win chance
 // from that line.
-function withWinner(m, sport) {
+function withWinner(m, sport, league) {
+  const MODEL_WEIGHT = weightFor(league);
   const ev = winnerById.get(m.id);
   if (!ev || !m.model) return m;
   const sd = m.model.sd ?? 12;
-  const markets = winnerMarkets(m, ev, sport, sd);
+  const markets = winnerMarkets(m, ev, sport, sd, MODEL_WEIGHT);
   if (!markets.length) return m;
   let main = markets.find((x) => x.market === "1X2" || x.market === "Winner");
   let p = main?.p ?? null, odds = main?.odds ?? null;
@@ -575,7 +584,7 @@ for (const lg of LEAGUES) {
 
   const upcoming = matches
     .filter((m) => m.status === "NS" && Date.parse(m.kickoff) > NOW - 3 * 3600e3 && Date.parse(m.kickoff) < NOW + 21 * DAY)
-    .map((m) => withWinner({ ...m, model: predict ? predict(m) : null }, lg.sport));
+    .map((m) => withWinner({ ...m, model: predict ? predict(m) : null }, lg.sport, lg.key));
   const results = matches.filter((m) => m.status === "FT").map((m) => [m.id, m.kickoff, m.home, m.away, m.hs, m.as, m.season, m.round]);
 
   const out = {
@@ -637,6 +646,19 @@ await writeFile(TRACKS_FILE, JSON.stringify(trackEntries));
 const tracks = scoreTracks(trackEntries, matchById, grade, leagueName, new Date(NOW).toISOString());
 await writeFile(new URL("tracks.json", OUT), JSON.stringify({ updatedAt: new Date(NOW).toISOString(), since: trackEntries[0]?.kickoff ?? null, tracks }));
 console.log(`Tracks: ${trackEntries.length} games logged; ` + tracks.map((t) => `${t.key} ${t.summary.won}/${t.summary.graded}`).join(", "));
+
+// Weekly self-tuning against everything logged and graded so far (applies from the next run).
+{
+  const btLeagues = ["epl", "laliga", "seriea", "bundesliga", "il-premier"].filter((k) => raw[k]?.matches?.length);
+  const backtestBrier = (h) => {
+    const r = btLeagues.map((k) => backtestFootball(raw[k].matches.map((m) => ({ ...m, home: cleanName(m.home), away: cleanName(m.away) })), h)).filter(Boolean);
+    return r.length ? r.reduce((a, x) => a + x.brier, 0) / r.length : null;
+  };
+  const { tuning, changed } = maybeTune(TUNING, { entries: trackEntries, matchById, now: new Date(NOW).toISOString(), backtestBrier });
+  await writeFile(TUNING_FILE, JSON.stringify(tuning, null, 1));
+  await writeFile(new URL("tuning.json", OUT), JSON.stringify(tuning));
+  console.log(`Tuning: model weight ${tuning.modelWeight}, half-life ${tuning.halfLife}d, confidence ${JSON.stringify(tuning.temperature)}${changed ? " (CHANGED this run)" : ""}`);
+}
 
 const record = buildRecord([...picks, ...ledger].map((p) => ({ ...p, leagueName: leagueName[p.league] || p.league })), matchById);
 index.record = record.summary;
