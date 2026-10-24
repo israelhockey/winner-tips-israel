@@ -53,11 +53,21 @@ jobs:
         run: |
           git config user.name "data-bot"
           git config user.email "data-bot@users.noreply.github.com"
-          git add data/raw data/ledger public/data
-          if git diff --cached --quiet; then
-            echo "No changes"
-          else
-            git commit -m "Refresh league data"
-            git pull --rebase origin main
-            git push
-          fi
+          # Keep what this run fetched (fixtures, results, logos); everything else is rebuilt on top
+          # of the latest version online, so concurrent updates (like the Winner odds job) never clash.
+          mkdir -p "$RUNNER_TEMP/fetched"
+          for f in data/raw/*.json; do
+            case "$(basename "$f")" in winner.json|winner-status.json|winner-aliases.json) ;; *) cp "$f" "$RUNNER_TEMP/fetched/" ;; esac
+          done
+          for i in 1 2 3; do
+            git fetch -q origin main
+            git reset -q --hard origin/main
+            cp "$RUNNER_TEMP"/fetched/*.json data/raw/
+            node scripts/build-model.mjs > /dev/null
+            git add data/raw data/ledger public/data
+            if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+            git commit -q -m "Refresh league data"
+            if git push -q origin HEAD:main; then exit 0; fi
+            echo "Lost a race with another update; rebuilding on the latest version"
+          done
+          exit 1
