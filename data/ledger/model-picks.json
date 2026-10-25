@@ -163,8 +163,32 @@
   "tipster": "Line Up model",
   "analysis": "Winner pays 1.85. We make it 59%, a fair price of 1.69: 9% more than it's worth.",
   "closingOdds": 1.85,
-  "closingSeenAt": "2026-10-25T21:53:38.672Z",
+  "closingSeenAt": "2026-10-25T23:32:21.264Z",
   "prevHash": "0e96483ae5e01d70f98ad3ba0d3743b8157f654ed617158abbb47840be9f0c8d",
   "hash": "6eee643690839a6490dbeb1eac3064523bfeeddc05a52156f1ed9e029228f069"
+ },
+ {
+  "id": "M-20261025-04",
+  "lockedAt": "2026-10-25T23:32:21.264Z",
+  "matchId": "espn-401909872",
+  "league": "nba",
+  "event": "Milwaukee Bucks v Indiana Pacers",
+  "kickoff": "2026-10-27T00:00:00.000Z",
+  "market": "Winner",
+  "line": null,
+  "selection": "1",
+  "label": "Milwaukee Bucks",
+  "odds": 2.7,
+  "p": 0.424,
+  "units": 1,
+  "edge": 0.143,
+  "confidence": 3,
+  "tier": "free",
+  "tipster": "Line Up model",
+  "analysis": "Winner pays 2.70. We make it 42%, a fair price of 2.36: 14% more than it's worth.",
+  "closingOdds": 2.7,
+  "closingSeenAt": "2026-10-25T23:32:21.264Z",
+  "prevHash": "6eee643690839a6490dbeb1eac3064523bfeeddc05a52156f1ed9e029228f069",
+  "hash": "65a04d58b0d5b9824879d0d20cc0b2b392588e8d30d5ded61d22fe0da124a438"
  }
 ]
