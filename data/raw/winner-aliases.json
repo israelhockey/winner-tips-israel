@@ -235,7 +235,9 @@
   "ראיו וייקאנו": "Rayo Vallecano de Madrid",
   "אלצ'ה": "Elche",
   "ולנסיה": "Valencia",
-  "ויאריאל": "Villarreal"
+  "ויאריאל": "Villarreal",
+  "מלאגה": "Málaga",
+  "אלאבס": "Deportivo Alavés"
  },
  "il-basket": {
   "מכבי ראשון לציון": "Maccabi Rishon LeZion",
@@ -245,6 +247,10 @@
   "הפועל תל אביב": "Hapoel Tel Aviv",
   "הפועל ירושלים": "Hapoel Jerusalem",
   "עירוני רמת גן": "Maccabi Ironi Ramat Gan",
-  "עירוני קרית אתא": "Ironi Kiryat Ata"
+  "עירוני קרית אתא": "Ironi Kiryat Ata",
+  "מכבי אשדוד": "Maccabi Ashdod",
+  "הפועל גליל עליון": "Hapoel Galil Elyon",
+  "בני הרצליה": "Bnei Herzliya",
+  "הפועל אילת": "Hapoel Eilat"
  }
 }

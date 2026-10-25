@@ -1,6 +1,6 @@
 {
- "at": "2026-10-25T09:11:13.999Z",
- "ok": false,
- "http": 500,
- "browser": "Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'playwright-core' imported from C:\\actions-runner\\_work\\winner-tips-israel\\winner-tips-israel\\scripts\\fetch-winner.mjs"
+ "at": "2026-10-25T21:12:51.321Z",
+ "ok": true,
+ "markets": 2712,
+ "games": 100
 }

@@ -94,5 +94,29 @@
   "closingSeenAt": "2026-10-25T09:07:29.205Z",
   "prevHash": "2fe2c846b159196b3adde4f9974f38f4a00cff43311b07790dbf9bdc2c9ebe54",
   "hash": "bf06bbdae4c417ac6c0efb133338c4e922d6c584e11897bcefbaf1185e72c2f0"
+ },
+ {
+  "id": "M-20261025-01",
+  "lockedAt": "2026-10-25T21:13:31.336Z",
+  "matchId": "espn-401909862",
+  "league": "nba",
+  "event": "Brooklyn Nets v Indiana Pacers",
+  "kickoff": "2026-10-25T22:00:00.000Z",
+  "market": "Winner",
+  "line": null,
+  "selection": "1",
+  "label": "Brooklyn Nets",
+  "odds": 2.7,
+  "p": 0.404,
+  "units": 1,
+  "edge": 0.09,
+  "confidence": 2,
+  "tier": "free",
+  "tipster": "Line Up model",
+  "analysis": "Winner pays 2.70. We make it 40%, a fair price of 2.48: 9% more than it's worth.",
+  "closingOdds": 2.7,
+  "closingSeenAt": "2026-10-25T21:13:31.336Z",
+  "prevHash": "bf06bbdae4c417ac6c0efb133338c4e922d6c584e11897bcefbaf1185e72c2f0",
+  "hash": "8d2d37b9942b5a363f35fbeee14ab5c8d1a5415898fbf52c53a94c9142ebf232"
  }
 ]
