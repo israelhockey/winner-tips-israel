@@ -211,8 +211,32 @@
   "tipster": "Line Up model",
   "analysis": "Winner pays 3.60. We make it 29%, a fair price of 3.41: 6% more than it's worth.",
   "closingOdds": 3.6,
-  "closingSeenAt": "2026-10-27T00:44:34.102Z",
+  "closingSeenAt": "2026-10-27T10:40:35.812Z",
   "prevHash": "65a04d58b0d5b9824879d0d20cc0b2b392588e8d30d5ded61d22fe0da124a438",
   "hash": "04596f509a40bd69730edf6ebeb5ee2c53af6755e05195ff86ac01ebd7014ce8"
+ },
+ {
+  "id": "M-20261027-01",
+  "lockedAt": "2026-10-27T10:40:35.812Z",
+  "matchId": "espn-401909880",
+  "league": "nba",
+  "event": "Los Angeles Lakers v Portland Trail Blazers",
+  "kickoff": "2026-10-28T03:00:00.000Z",
+  "market": "Points",
+  "line": 236.5,
+  "selection": "Under",
+  "label": "Under 236.5 points",
+  "odds": 1.7,
+  "p": 0.628,
+  "units": 1,
+  "edge": 0.068,
+  "confidence": 1,
+  "tier": "free",
+  "tipster": "Line Up model",
+  "analysis": "Winner pays 1.70. We make it 63%, a fair price of 1.59: 7% more than it's worth.",
+  "closingOdds": 1.7,
+  "closingSeenAt": "2026-10-27T10:40:35.812Z",
+  "prevHash": "04596f509a40bd69730edf6ebeb5ee2c53af6755e05195ff86ac01ebd7014ce8",
+  "hash": "24b0c6b47e478253d6882ecd0d48e7facebc3756de9003125788b2b9c8a82ae3"
  }
 ]
