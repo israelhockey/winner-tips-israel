@@ -259,8 +259,32 @@
   "tipster": "Line Up model",
   "analysis": "Winner pays 2.85. We make it 37%, a fair price of 2.69: 6% more than it's worth.",
   "closingOdds": 2.8,
-  "closingSeenAt": "2026-10-29T00:08:45.132Z",
+  "closingSeenAt": "2026-10-29T01:14:31.962Z",
   "prevHash": "24b0c6b47e478253d6882ecd0d48e7facebc3756de9003125788b2b9c8a82ae3",
   "hash": "7723a8bb350ed107a3119a8b053d3b5c33cef4a30f6faaa88db1387322eb8d81"
+ },
+ {
+  "id": "M-20261029-01",
+  "lockedAt": "2026-10-29T01:14:31.962Z",
+  "matchId": "espn-401909894",
+  "league": "nba",
+  "event": "New Orleans Pelicans v Sacramento Kings",
+  "kickoff": "2026-10-30T00:00:00.000Z",
+  "market": "Handicap",
+  "line": 4.5,
+  "selection": "1",
+  "label": "New Orleans Pelicans +4.5",
+  "odds": 1.8,
+  "p": 0.599,
+  "units": 1,
+  "edge": 0.079,
+  "confidence": 1,
+  "tier": "free",
+  "tipster": "Line Up model",
+  "analysis": "Winner pays 1.80. We make it 60%, a fair price of 1.67: 8% more than it's worth.",
+  "closingOdds": 1.8,
+  "closingSeenAt": "2026-10-29T01:14:31.962Z",
+  "prevHash": "7723a8bb350ed107a3119a8b053d3b5c33cef4a30f6faaa88db1387322eb8d81",
+  "hash": "10f1996b86edc84c0e4e70d3aed195fa7823cffbf5a0c9c22572b4d0eca20fee"
  }
 ]
