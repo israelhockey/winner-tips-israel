@@ -3,10 +3,10 @@
  "halfLife": 180,
  "temperature": {
   "football": 0.75,
-  "basketball": 1.05
+  "basketball": 1.2
  },
  "leagueWeight": {},
- "updatedAt": "2026-11-13T20:03:28.992Z",
+ "updatedAt": "2026-11-20T12:09:31.492Z",
  "history": [
   {
    "at": "2026-10-24T19:59:55.209Z",
@@ -47,6 +47,19 @@
      "from": 1,
      "to": 1.05,
      "games": 202,
+     "why": "our percentages ran too confident"
+    }
+   ]
+  },
+  {
+   "at": "2026-11-20T12:09:31.492Z",
+   "samples": 557,
+   "changes": [
+    {
+     "setting": "confidence (basketball)",
+     "from": 1.05,
+     "to": 1.2,
+     "games": 279,
      "why": "our percentages ran too confident"
     }
    ]
